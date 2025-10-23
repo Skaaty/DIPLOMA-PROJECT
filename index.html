@@ -2,11 +2,22 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>diploma-project</title>
   </head>
   <body>
+    <div id="button-container">
+      <label for="api-selector">Select API:</label>
+      <select id="api-selector" name="options">
+        <option value="webgl">WebGL</option>
+        <option value="webgpu">WebGPU</option>
+      </select>
+      <label for="scene-selector">Select scene:</label>
+      <select id="scene-selector">
+        <option value="scene1">THREE scene</option>
+      </select>
+      <button id="confirm-button">Start Benchmark</button>
+    </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>
