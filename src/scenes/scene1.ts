@@ -39,4 +39,8 @@ function setupLights(scene: THREE.Scene): void {
     directionalLight.shadow.camera.bottom = -20;
 
     scene.add(directionalLight);
+
+    const pointLight = new THREE.PointLight(0xffaa33, 0.8, 100);
+    pointLight.position.set(-8, 8, -8);
+    scene.add(pointLight);
 }
