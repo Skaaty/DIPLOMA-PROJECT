@@ -80,11 +80,14 @@ function setupScene(): THREE.Scene {
 }
 
 function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
+    if (rendererType === 'webgpu' && !navigator.gpu) {
+        console.warn('WebGPU not supported. Falling back to WebGL.');
+        rendererType = 'webgl';
+    }
+
     console.info(`${rendererType} selected`);
 
     let renderer: THREE.WebGLRenderer | WebGPURenderer;
-
-    //const isWebGL = rendererType === 'webgl';
 
     if (rendererType === 'webgl') {
         renderer = new THREE.WebGLRenderer({
@@ -104,17 +107,11 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
         });
     }
 
-    // const renderer = new WebGPURenderer({
-    //     canvas,
-    //     antialias: true,
-    //     forceWebGL: isWebGL,
-    //     stencil: false,
-    //     depth: false,
-    //     alpha: true,
-    // });
-
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
+
+    console.log(renderer instanceof WebGPURenderer ? 'Using WebGPU' : 'Using WebGPU');
+
     return renderer;
 }
 
