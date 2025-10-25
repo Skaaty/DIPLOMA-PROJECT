@@ -42,6 +42,10 @@ confirmButton?.addEventListener('click', () => {
     minimal: false,
   });
   container.appendChild(stats.dom);
+  stats.dom.style.position = 'absolute';
+  stats.dom.style.top = '50%';
+  stats.dom.style.right = '10px';
+  stats.dom.style.transform = 'translateY(0%)';
 
   const onBenchmarkComplete = () => {
     benchmarkRunning = false;
