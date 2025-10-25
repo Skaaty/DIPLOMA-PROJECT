@@ -86,3 +86,7 @@ select:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+canvas {
+  margin: auto;
+}

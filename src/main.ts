@@ -1,12 +1,9 @@
 import './style.css';
-import * as THREE from 'three';
-import { scene1 } from './scenes/scene1';
+import { loadScene1 } from './scenes/scene1';
+import Stats from 'stats-gl';
 
 type ApiType = 'webgl' | 'webgpu' | string;
 type BenchmarkType = 'scene1';
-
-const canvas = document.createElement('canvas');
-document.body.appendChild(canvas);
 
 const apiSelector = document.getElementById('api-selector') as HTMLSelectElement;
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
@@ -23,10 +20,15 @@ confirmButton?.addEventListener('click', () => {
     return;
   }
 
+  const benchmarkData: number[] = [];
+  const stats = new Stats();
+
   switch(selectedScene) {
     case 'scene1':
-      loadNormals()
+      loadScene1(selectedApi, stats, benchmarkData);
       break;
+    default:
+      console.warn('Nothing was selected');
   }
 
 })

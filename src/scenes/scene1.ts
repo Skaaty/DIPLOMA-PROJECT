@@ -1,18 +1,9 @@
+import type Stats from 'stats-gl';
 import * as THREE from 'three';
-import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
-import { WebGPURenderer } from 'three/webgpu';
+import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
 
-const OBJECT_NUM = 10_000;
-const TIME_DELAY = 6000;
-const TIME_TOTAL = 24000;
-
-function createMaterial(): THREE.MeshStandardMaterial {
-    const material = new THREE.MeshStandardMaterial({
-        color: 0x049ef4,
-        roughness: 0.5,
-        metalness: 0.5,
-        envMapIntensity: 1.0
-    });
+function createMaterial(): MeshNormalNodeMaterial {
+    const material = new MeshNormalNodeMaterial();
     return material;
 }
 
@@ -25,29 +16,29 @@ function initGeometries(): THREE.BufferGeometry[] {
     return geometries;
 }
 
-function initLights(scene: THREE.Scene): void {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-    scene.add(ambientLight);
+// function initLights(scene: THREE.Scene): void {
+//     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+//     scene.add(ambientLight);
 
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    directionalLight.position.set(10, 15, 10);
-    directionalLight.castShadow = true;
+//     const directionalLight = new THREE.DirectionalLight(0xffffff, 1.2);
+//     directionalLight.position.set(10, 15, 10);
+//     directionalLight.castShadow = true;
 
-    directionalLight.shadow.mapSize.width = 1024;
-    directionalLight.shadow.mapSize.height = 1024;
-    directionalLight.shadow.camera.near = 0.5;
-    directionalLight.shadow.camera.far = 50;
-    directionalLight.shadow.camera.left = -20;
-    directionalLight.shadow.camera.right = 20;
-    directionalLight.shadow.camera.top = 20;
-    directionalLight.shadow.camera.bottom = -20;
+//     directionalLight.shadow.mapSize.width = 1024;
+//     directionalLight.shadow.mapSize.height = 1024;
+//     directionalLight.shadow.camera.near = 0.5;
+//     directionalLight.shadow.camera.far = 50;
+//     directionalLight.shadow.camera.left = -20;
+//     directionalLight.shadow.camera.right = 20;
+//     directionalLight.shadow.camera.top = 20;
+//     directionalLight.shadow.camera.bottom = -20;
 
-    scene.add(directionalLight);
+//     scene.add(directionalLight);
 
-    const pointLight = new THREE.PointLight(0xffaa33, 0.8, 100);
-    pointLight.position.set(-8, 8, -8);
-    scene.add(pointLight);
-}
+//     const pointLight = new THREE.PointLight(0xffaa33, 0.8, 100);
+//     pointLight.position.set(-8, 8, -8);
+//     scene.add(pointLight);
+// }
 
 
 function initMeshes(
@@ -60,7 +51,7 @@ function initMeshes(
     const geometryCount = objNum;
     const vertexCount = geometries.length * 512;
     const indexCount = geometries.length * 1024;
-    const boxRadius = 15;
+    const boxRadius = 10;
 
     const batchedMesh = new THREE.BatchedMesh(
         geometryCount,
@@ -118,12 +109,84 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string): WebGPUR
         stencil: false,
         depth: false,
         alpha: true,
-        powerPreference: 'high-performance',
-
     });
 
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(800, 600);
+    renderer.setSize(window.innerWidth, window.innerHeight);
 
     return renderer;
+}
+
+let fps = 0.0;
+async function animate(
+    scene: THREE.Scene,
+    camera: THREE.Camera,
+    renderer: WebGPURenderer,
+    time: number,
+    benchmarkData: number[],
+    stats: Stats, 
+): Promise<void> {
+    const now = (performance || Date).now();
+
+    if (now >= time + 1000) {
+        fps = 10000 / (now - time);
+        benchmarkData.push(fps);
+    }
+
+    stats.update();
+
+    scene.traverse((obj) => {
+        if (obj instanceof THREE.BatchedMesh) {
+            obj.rotation.y += fps * 0.00005;
+        }
+    });
+
+    await renderer.renderAsync(scene, camera);
+}
+
+const OBJECT_NUM = 10_000;
+//const TIME_DELAY = 6000;
+//const TIME_TOTAL = 24000;
+
+export function loadScene1(rendererType: string, stats: Stats, benchmarkData: number[]): void {
+    const canvas = document.createElement('canvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    canvas.id = 'my-canvas';
+    document.body.appendChild(canvas);
+
+    const scene = setupScene();
+    const camera = setupCamera();
+    const renderer = setupRenderer(canvas, rendererType);
+
+    const geometries = initGeometries();
+    const userInput = document.getElementById('obj-count') as HTMLInputElement | null;
+    const userNum = userInput ? parseFloat(userInput.value) : NaN;
+
+    let objNum = OBJECT_NUM;
+    if (isNaN(userNum)) {
+        console.log('Using default value:', OBJECT_NUM);
+    } else {
+        objNum = userNum;
+    }
+
+    initMeshes(scene, geometries, objNum);
+
+    let shouldRender = false;
+    //let delay = rendererType === 'webgl' ? TIME_DELAY : TIME_DELAY / 3;
+
+    setTimeout(() => {
+        console.info('benchmark started');
+
+        shouldRender = true;
+
+        renderer.renderAsync(scene, camera);
+
+        const time = (performance || Date).now();
+        renderer.setAnimationLoop(() => {
+            if (shouldRender) {
+                animate(scene, camera, renderer, time, benchmarkData, stats)
+            }
+        })
+    })
 }
