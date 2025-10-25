@@ -2,9 +2,12 @@ import type Stats from 'stats-gl';
 import * as THREE from 'three';
 import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
 
-function createMaterial(): MeshNormalNodeMaterial {
-    const material = new MeshNormalNodeMaterial();
-    return material;
+function createMaterial(rendererType: string): THREE.Material {
+    if (rendererType === 'webgl') {
+        return new THREE.MeshNormalMaterial();
+    } else {
+        return new MeshNormalNodeMaterial();
+    }
 }
 
 function initGeometries(): THREE.BufferGeometry[] {
@@ -19,9 +22,10 @@ function initGeometries(): THREE.BufferGeometry[] {
 function initMeshes(
     scene: THREE.Scene,
     geometries: THREE.BufferGeometry[],
-    objNum: number
+    objNum: number,
+    rendererType: string
 ): void {
-    const material = createMaterial();
+    const material = createMaterial(rendererType);
 
     const geometryCount = objNum;
     const vertexCount = geometries.length * 512;
@@ -77,16 +81,37 @@ function setupScene(): THREE.Scene {
 
 function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
     console.info(`${rendererType} selected`);
-    const isWebGL = rendererType === 'webgl';
 
-    const renderer = new WebGPURenderer({
-        canvas,
-        antialias: true,
-        forceWebGL: isWebGL,
-        stencil: false,
-        depth: false,
-        alpha: true,
-    });
+    let renderer: THREE.WebGLRenderer | WebGPURenderer;
+
+    //const isWebGL = rendererType === 'webgl';
+
+    if (rendererType === 'webgl') {
+        renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: true,
+            stencil: true,
+            depth: true,
+            alpha: true,
+        });
+    } else {
+        renderer = new WebGPURenderer({
+            canvas,
+            antialias: true,
+            stencil: true,
+            depth: true,
+            alpha: true
+        });
+    }
+
+    // const renderer = new WebGPURenderer({
+    //     canvas,
+    //     antialias: true,
+    //     forceWebGL: isWebGL,
+    //     stencil: false,
+    //     depth: false,
+    //     alpha: true,
+    // });
 
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -121,7 +146,7 @@ export function loadScene1(
     const userNum = userInput ? parseFloat(userInput.value) : NaN;
     const objNum = isNaN(userNum) ? OBJECT_NUM : userNum;
 
-    initMeshes(scene, geometries, objNum);
+    initMeshes(scene, geometries, objNum, rendererType);
 
     const clock = new THREE.Clock();
     let capturing = false;
@@ -161,9 +186,11 @@ export function loadScene1(
             }
         });
 
-        await renderer.renderAsync(scene, camera);
+        renderer.render(scene, camera);
 
-        await renderer.resolveTimestampsAsync(THREE.TimestampQuery.RENDER);
+        if (renderer instanceof WebGPURenderer) {
+            await renderer.resolveTimestampsAsync(THREE.TimestampQuery.RENDER);
+        }
 
         stats.end();
         stats.update();
