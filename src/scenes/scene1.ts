@@ -75,7 +75,7 @@ function setupScene(): THREE.Scene {
     return scene;
 }
 
-function setupRenderer(canvas: HTMLCanvasElement, rendererType: string): WebGPURenderer {
+function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
     console.info(`${rendererType} selected`);
     const isWebGL = rendererType === 'webgl';
 
@@ -103,6 +103,11 @@ export function loadScene1(
     benchmarkData: number[],
     onComplete: () => void
 ): void {
+    const oldCanvas = document.getElementById('my-canvas');
+    if (oldCanvas && oldCanvas.parentNode) {
+        oldCanvas.parentNode.removeChild(oldCanvas);
+    }
+
     const canvas = document.createElement('canvas');
     canvas.id = 'my-canvas';
     document.body.appendChild(canvas);
@@ -110,6 +115,7 @@ export function loadScene1(
     const scene = setupScene();
     const camera = setupCamera();
     const renderer = setupRenderer(canvas, rendererType);
+    stats.init(renderer);
     const geometries = initGeometries();
     const userInput = document.getElementById('obj-count') as HTMLInputElement | null;
     const userNum = userInput ? parseFloat(userInput.value) : NaN;
@@ -121,27 +127,30 @@ export function loadScene1(
     let capturing = false;
     let startTime = 0;
 
+    // Warmup phase for the benchmark
     console.info('Warming up for 5 seconds.');
     setTimeout(() => {
         capturing = true;
         startTime = performance.now();
-        console.info('Benchmark started (Capturing Performance Data)')
+        console.info('Benchmark started (Capturing Performance Data)');
+                
     }, WARMUP_TIME);
 
+    // Benchmark stopping after the capture
     setTimeout(() => {
         capturing = false;
         console.info('Benchmark finished.');
 
         renderer.setAnimationLoop(null);
-        scene.clear();
-        renderer.dispose();
+        //scene.clear();
+        //renderer.dispose();
 
-        if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+        //if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
 
         onComplete();
     }, WARMUP_TIME + BENCHMARK_TIME);
 
-    renderer.setAnimationLoop(() => {
+    renderer.setAnimationLoop(async () => {
         const delta = clock.getDelta();
 
         stats.begin();
@@ -152,7 +161,9 @@ export function loadScene1(
             }
         });
 
-        renderer.render(scene, camera);
+        await renderer.renderAsync(scene, camera);
+
+        await renderer.resolveTimestampsAsync(THREE.TimestampQuery.RENDER);
 
         stats.end();
         stats.update();

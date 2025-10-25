@@ -8,6 +8,7 @@ type BenchmarkType = 'scene1';
 const apiSelector = document.getElementById('api-selector') as HTMLSelectElement;
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
 const confirmButton = document.getElementById('confirm-button') as HTMLButtonElement;
+const container = document.getElementById('button-container') as HTMLDivElement;
 
 let benchmarkRunning = false;
 //const benchmarkData = [];
@@ -31,7 +32,16 @@ confirmButton?.addEventListener('click', () => {
   confirmButton.textContent = 'Running...';
   
   const benchmarkData: number[] = [];
-  const stats = new Stats();
+  const stats = new Stats({
+    trackGPU: true,
+    logsPerSecond: 4,
+    samplesLog: 200,
+    samplesGraph: 10,
+    precision: 2,
+    horizontal: true,
+    minimal: false,
+  });
+  container.appendChild(stats.dom);
 
   const onBenchmarkComplete = () => {
     benchmarkRunning = false;

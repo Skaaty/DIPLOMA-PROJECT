@@ -15,17 +15,12 @@
 
 body {
   margin: 0;
+  padding: 0;
   display: flex;
+  overflow: hidden;
   min-width: 320px;
   min-height: 100vh;
   flex-direction:  column;
-}
-
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
 }
 
 button {
@@ -38,6 +33,7 @@ button {
   background-color: #1a1a1a;
   cursor: pointer;
   transition: border-color 0.25s;
+  margin: 8px 8px;
 }
 button:hover {
   border-color: #646cff;
@@ -87,6 +83,7 @@ select:focus-visible {
   }
 }
 
-canvas {
-  margin: auto;
+label {
+  padding: 5px;
+  margin-left: 15px;
 }
