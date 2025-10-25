@@ -92,31 +92,47 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string): WebGPUR
     return renderer;
 }
 
-let fps = 0.0;
+// let fps = 0.0;
+const clock = new THREE.Clock();
+
 async function animate(
     scene: THREE.Scene,
     camera: THREE.Camera,
     renderer: WebGPURenderer,
-    time: number,
+    //time: number,
     benchmarkData: number[],
     stats: Stats, 
 ): Promise<void> {
-    const now = (performance || Date).now();
+    renderer.clearAsync();
+    //const now = (performance || Date).now();
 
-    if (now >= time + 1000) {
-        fps = 10000 / (now - time);
-        benchmarkData.push(fps);
-    }
+    // if (now >= time + 1000) {
+    //     fps = 10000 / (now - time);
+    //     benchmarkData.push(fps);
+    // }
+    const delta = clock.getDelta();
 
-    stats.update();
+    stats.begin();
 
-    scene.traverse((obj) => {
+    // scene.traverse((obj) => {
+    //     if (obj instanceof THREE.BatchedMesh) {
+    //         obj.rotation.y += fps * 0.00005;
+    //     }
+    // });
+
+    scene.traverse( obj => {
         if (obj instanceof THREE.BatchedMesh) {
-            obj.rotation.y += fps * 0.00005;
+            obj.rotation.y += delta * 0.5;
         }
     });
 
     await renderer.renderAsync(scene, camera);
+
+    stats.end();
+    stats.update();
+
+    const fps = 1 / delta;
+    benchmarkData.push(fps);
 }
 
 const OBJECT_NUM = 10_000;
@@ -152,15 +168,15 @@ export function loadScene1(rendererType: string, stats: Stats, benchmarkData: nu
 
     setTimeout(() => {
         console.info('benchmark started');
-
         shouldRender = true;
+        stats.init(renderer);
 
         renderer.renderAsync(scene, camera);
 
-        const time = (performance || Date).now();
+        //const time = (performance || Date).now();
         renderer.setAnimationLoop(() => {
             if (shouldRender) {
-                animate(scene, camera, renderer, time, benchmarkData, stats)
+                animate(scene, camera, renderer, benchmarkData, stats)
             }
         })
     })
