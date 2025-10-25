@@ -9,9 +9,15 @@ const apiSelector = document.getElementById('api-selector') as HTMLSelectElement
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
 const confirmButton = document.getElementById('confirm-button') as HTMLButtonElement;
 
+let benchmarkRunning = false;
 //const benchmarkData = [];
 
 confirmButton?.addEventListener('click', () => {
+  if (benchmarkRunning) {
+    console.warn('A benchmark is already running.');
+    return;
+  }
+
   const selectedScene = sceneSelector.value as BenchmarkType;
   const selectedApi = apiSelector.value as ApiType;
   
@@ -20,15 +26,29 @@ confirmButton?.addEventListener('click', () => {
     return;
   }
 
+  benchmarkRunning = true;
+  confirmButton.disabled = true;
+  confirmButton.textContent = 'Running...';
+  
   const benchmarkData: number[] = [];
   const stats = new Stats();
 
+  const onBenchmarkComplete = () => {
+    benchmarkRunning = false;
+    confirmButton.disabled = false;
+    confirmButton.textContent = 'Start Benchmark';
+    console.info('Benchmark completed and ready for another run.');
+  }
+
   switch(selectedScene) {
     case 'scene1':
-      loadScene1(selectedApi, stats, benchmarkData);
+      loadScene1(selectedApi, stats, benchmarkData, onBenchmarkComplete);
       break;
     default:
       console.warn('Nothing was selected');
+      benchmarkRunning = false;
+      confirmButton.disabled = false;
+      confirmButton.textContent = 'Start Benchmark';
   }
 
 })

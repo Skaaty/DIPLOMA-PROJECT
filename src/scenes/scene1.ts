@@ -33,7 +33,11 @@ function initMeshes(
         vertexCount,
         indexCount,
         material
-    );
+    ) as THREE.Object3D & {
+        addGeometry: (geometry: THREE.BufferGeometry) => number;
+        addInstance: (geometryId: number) => number;
+        setMatrixAt: (instanceId: number, matrix: THREE.Matrix4) => void;
+    };
 
     const geometryIds: number[] = geometries.map((geo) =>
         batchedMesh.addGeometry(geo)
@@ -50,8 +54,7 @@ function initMeshes(
             Math.sin(angle) * boxRadius
         );
 
-        const matrix = new THREE.Matrix4();
-        matrix.makeTranslation(pos.x, pos.y, pos.z);
+        const matrix = new THREE.Matrix4().makeTranslation(pos.x, pos.y, pos.z);
         batchedMesh.setMatrixAt(instanceId, matrix);
     }
 
@@ -66,21 +69,20 @@ function setupCamera(): THREE.PerspectiveCamera {
     return camera;
 }
 
-function setupScene() : THREE.Scene {
+function setupScene(): THREE.Scene {
     const scene = new THREE.Scene();
     scene.background = new THREE.Color('#0d0c18');
     return scene;
 }
 
 function setupRenderer(canvas: HTMLCanvasElement, rendererType: string): WebGPURenderer {
-    console.info(rendererType, 'selected');
-
-    const selectWebGL = rendererType === 'webgl';
+    console.info(`${rendererType} selected`);
+    const isWebGL = rendererType === 'webgl';
 
     const renderer = new WebGPURenderer({
-        canvas: canvas,
+        canvas,
         antialias: true,
-        forceWebGL: selectWebGL,
+        forceWebGL: isWebGL,
         stencil: false,
         depth: false,
         alpha: true,
@@ -88,96 +90,117 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string): WebGPUR
 
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
-
     return renderer;
 }
 
-// let fps = 0.0;
-const clock = new THREE.Clock();
+//const clock = new THREE.Clock();
 
-async function animate(
-    scene: THREE.Scene,
-    camera: THREE.Camera,
-    renderer: WebGPURenderer,
-    //time: number,
-    benchmarkData: number[],
-    stats: Stats, 
-): Promise<void> {
-    renderer.clearAsync();
-    //const now = (performance || Date).now();
+// async function animate(
+//     scene: THREE.Scene,
+//     camera: THREE.Camera,
+//     renderer: WebGPURenderer,
+//     benchmarkData: number[],
+//     stats: Stats, 
+// ): Promise<void> {
+//     renderer.clearAsync();
+//     //const now = (performance || Date).now();
 
-    // if (now >= time + 1000) {
-    //     fps = 10000 / (now - time);
-    //     benchmarkData.push(fps);
-    // }
-    const delta = clock.getDelta();
+//     // if (now >= time + 1000) {
+//     //     fps = 10000 / (now - time);
+//     //     benchmarkData.push(fps);
+//     // }
+//     const delta = clock.getDelta();
 
-    stats.begin();
+//     stats.begin();
 
-    // scene.traverse((obj) => {
-    //     if (obj instanceof THREE.BatchedMesh) {
-    //         obj.rotation.y += fps * 0.00005;
-    //     }
-    // });
+//     // scene.traverse((obj) => {
+//     //     if (obj instanceof THREE.BatchedMesh) {
+//     //         obj.rotation.y += fps * 0.00005;
+//     //     }
+//     // });
 
-    scene.traverse( obj => {
-        if (obj instanceof THREE.BatchedMesh) {
-            obj.rotation.y += delta * 0.5;
-        }
-    });
+//     scene.traverse( obj => {
+//         if (obj instanceof THREE.BatchedMesh) {
+//             obj.rotation.y += delta * 0.5;
+//         }
+//     });
 
-    await renderer.renderAsync(scene, camera);
+//     await renderer.renderAsync(scene, camera);
 
-    stats.end();
-    stats.update();
+//     stats.end();
+//     stats.update();
 
-    const fps = 1 / delta;
-    benchmarkData.push(fps);
-}
+//     const fps = 1 / delta;
+//     benchmarkData.push(fps);
+// }
 
 const OBJECT_NUM = 10_000;
-//const TIME_DELAY = 6000;
-//const TIME_TOTAL = 24000;
+const WARMUP_TIME = 5_000;
+const BENCHMARK_TIME = 30_000;
 
-export function loadScene1(rendererType: string, stats: Stats, benchmarkData: number[]): void {
+export function loadScene1(
+    rendererType: string,
+    stats: Stats,
+    benchmarkData: number[],
+    onComplete: () => void
+): void {
     const canvas = document.createElement('canvas');
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
     canvas.id = 'my-canvas';
     document.body.appendChild(canvas);
 
     const scene = setupScene();
     const camera = setupCamera();
     const renderer = setupRenderer(canvas, rendererType);
-
     const geometries = initGeometries();
     const userInput = document.getElementById('obj-count') as HTMLInputElement | null;
     const userNum = userInput ? parseFloat(userInput.value) : NaN;
-
-    let objNum = OBJECT_NUM;
-    if (isNaN(userNum)) {
-        console.log('Using default value:', OBJECT_NUM);
-    } else {
-        objNum = userNum;
-    }
+    const objNum = isNaN(userNum) ? OBJECT_NUM : userNum;
 
     initMeshes(scene, geometries, objNum);
 
-    let shouldRender = false;
-    //let delay = rendererType === 'webgl' ? TIME_DELAY : TIME_DELAY / 3;
+    const clock = new THREE.Clock();
+    let capturing = false;
+    let startTime = 0;
+
+    console.info('Warming up for 5 seconds.');
+    setTimeout(() => {
+        capturing = true;
+        startTime = performance.now();
+        console.info('Benchmark started (Capturing Performance Data)')
+    }, WARMUP_TIME);
 
     setTimeout(() => {
-        console.info('benchmark started');
-        shouldRender = true;
-        stats.init(renderer);
+        capturing = false;
+        console.info('Benchmark finished.');
 
-        renderer.renderAsync(scene, camera);
+        renderer.setAnimationLoop(null);
+        scene.clear();
+        renderer.dispose();
 
-        //const time = (performance || Date).now();
-        renderer.setAnimationLoop(() => {
-            if (shouldRender) {
-                animate(scene, camera, renderer, benchmarkData, stats)
+        if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+
+        onComplete();
+    }, WARMUP_TIME + BENCHMARK_TIME);
+
+    renderer.setAnimationLoop(() => {
+        const delta = clock.getDelta();
+
+        stats.begin();
+
+        scene.traverse((object) => {
+            if (object instanceof THREE.BatchedMesh) {
+                object.rotation.y += delta * 0.5;
             }
-        })
-    })
+        });
+
+        renderer.render(scene, camera);
+
+        stats.end();
+        stats.update();
+
+        if (capturing) {
+            const fps = 1 / delta;
+            benchmarkData.push(fps);
+        }
+    });
 }
