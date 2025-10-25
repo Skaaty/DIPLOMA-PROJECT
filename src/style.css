@@ -87,3 +87,30 @@ label {
   padding: 5px;
   margin-left: 15px;
 }
+
+input[type="text"],
+input[type="number"],
+input[type="search"] {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  color: rgba(255, 255, 255, 0.87);
+  transition: border-color 0.25s;
+  margin: 8px 8px;
+}
+
+input[type="text"]:hover,
+input[type="number"]:hover,
+input[type="search"]:hover {
+  border-color: #646cff;
+}
+
+input[type="text"]:focus,
+input[type="number"]:focus,
+input[type="search"]:focus {
+  outline: 4px auto -webkit-focus-ring-color;
+}

@@ -9,6 +9,9 @@ const apiSelector = document.getElementById('api-selector') as HTMLSelectElement
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
 const confirmButton = document.getElementById('confirm-button') as HTMLButtonElement;
 //const container = document.getElementById('button-container') as HTMLDivElement;
+const input = document.querySelector('input') as HTMLInputElement;
+input?.addEventListener('input', resizeInput);
+resizeInput.call(input);
 
 let benchmarkRunning = false;
 //const benchmarkData = [];
@@ -65,3 +68,7 @@ confirmButton?.addEventListener('click', () => {
   }
 
 })
+
+function resizeInput(this: HTMLInputElement) {
+  this.style.width = this.value.length + "ch";
+}

@@ -85,7 +85,7 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
         rendererType = 'webgl';
     }
 
-    console.info(`${rendererType} selected`);
+    console.info(`${rendererType.toUpperCase()} selected`);
 
     let renderer: THREE.WebGLRenderer | WebGPURenderer;
 
@@ -110,7 +110,7 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
 
-    console.log(renderer instanceof WebGPURenderer ? 'Using WebGPU' : 'Using WebGPU');
+    console.log(renderer instanceof WebGPURenderer ? 'Using WebGPU' : 'Using WebGL');
 
     return renderer;
 }
