@@ -93,47 +93,6 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string): WebGPUR
     return renderer;
 }
 
-//const clock = new THREE.Clock();
-
-// async function animate(
-//     scene: THREE.Scene,
-//     camera: THREE.Camera,
-//     renderer: WebGPURenderer,
-//     benchmarkData: number[],
-//     stats: Stats, 
-// ): Promise<void> {
-//     renderer.clearAsync();
-//     //const now = (performance || Date).now();
-
-//     // if (now >= time + 1000) {
-//     //     fps = 10000 / (now - time);
-//     //     benchmarkData.push(fps);
-//     // }
-//     const delta = clock.getDelta();
-
-//     stats.begin();
-
-//     // scene.traverse((obj) => {
-//     //     if (obj instanceof THREE.BatchedMesh) {
-//     //         obj.rotation.y += fps * 0.00005;
-//     //     }
-//     // });
-
-//     scene.traverse( obj => {
-//         if (obj instanceof THREE.BatchedMesh) {
-//             obj.rotation.y += delta * 0.5;
-//         }
-//     });
-
-//     await renderer.renderAsync(scene, camera);
-
-//     stats.end();
-//     stats.update();
-
-//     const fps = 1 / delta;
-//     benchmarkData.push(fps);
-// }
-
 const OBJECT_NUM = 10_000;
 const WARMUP_TIME = 5_000;
 const BENCHMARK_TIME = 30_000;
