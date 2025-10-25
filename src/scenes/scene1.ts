@@ -1,6 +1,7 @@
 import type Stats from 'stats-gl';
 import * as THREE from 'three';
 import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
+import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
 
 function createMaterial(rendererType: string): THREE.Material {
     if (rendererType === 'webgl') {
@@ -148,22 +149,36 @@ export function loadScene1(
     const clock = new THREE.Clock();
     let capturing = false;
     let startTime = 0;
+    let stoppedManually = false;
+
+    function stopBenchmark() {
+        stoppedManually= true;
+        capturing = false;
+        console.info('Benchmark stopped manually.');
+
+        renderer.setAnimationLoop(null);
+        removeStopButton();
+        onComplete();
+    }
 
     // Warmup phase for the benchmark
     console.info('Warming up for 5 seconds.');
+    createStopButton(stopBenchmark);
+
     setTimeout(() => {
         capturing = true;
         startTime = performance.now();
         console.info('Benchmark started (Capturing Performance Data)');
-                
     }, WARMUP_TIME);
 
     // Benchmark stopping after the capture
     setTimeout(() => {
+        if (stoppedManually) return;
         capturing = false;
         console.info('Benchmark finished.');
 
         renderer.setAnimationLoop(null);
+        removeStopButton();
         //scene.clear();
         //renderer.dispose();
 
