@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 
+const OBJECT_NUM = 10_000;
+const TIME_DELAY = 6000;
+const TIME_TOTAL = 24000;
+
 function createMaterial(): THREE.MeshStandardMaterial {
     const material = new THREE.MeshStandardMaterial({
         color: 0x049ef4,
@@ -17,11 +21,10 @@ function initGeometries(): THREE.BufferGeometry[] {
         new THREE.BoxGeometry(0.06, 0.06, 0.06, 2, 2, 1),
         new THREE.SphereGeometry(0.06, 8, 6),
     ];
-
     return geometries;
 }
 
-function setupLights(scene: THREE.Scene): void {
+function initLights(scene: THREE.Scene): void {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
     scene.add(ambientLight);
 
@@ -43,4 +46,49 @@ function setupLights(scene: THREE.Scene): void {
     const pointLight = new THREE.PointLight(0xffaa33, 0.8, 100);
     pointLight.position.set(-8, 8, -8);
     scene.add(pointLight);
+}
+
+
+function initMeshes(
+    scene: THREE.Scene,
+    geometries: THREE.BufferGeometry[],
+    objNum: number
+): void {
+    const material = createMaterial();
+
+    const geometryCount = objNum;
+    const vertexCount = geometries.length * 512;
+    const indexCount = geometries.length * 1024;
+    const boxRadius = 15;
+
+    const batchedMesh = new THREE.BatchedMesh(
+        geometryCount,
+        vertexCount,
+        indexCount,
+        material
+    );
+
+    const geometryIds: number[] = geometries.map((geo) =>
+        batchedMesh.addGeometry(geo)
+    );
+
+    for (let i = 0; i < objNum; i++) {
+        const geometryId = geometryIds[i % geometries.length];
+        const instanceId = batchedMesh.addInstance(geometryId);
+
+        const angle = (i * Math.PI * 2) / objNum;
+        const pos = new THREE.Vector3(
+            Math.cos(angle) * boxRadius,
+            Math.random() * 5.5 + 3,
+            Math.sin(angle) * boxRadius
+        );
+
+        const matrix = new THREE.Matrix4();
+        matrix.makeTranslation(pos.x, pos.y, pos.z);
+        batchedMesh.setMatrixAt(instanceId, matrix);
+    }
+
+    batchedMesh.frustumCulled = false;
+    scene.add(batchedMesh);
+
 }
