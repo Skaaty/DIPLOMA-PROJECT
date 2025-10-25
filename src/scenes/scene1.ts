@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import WebGPU from 'three/examples/jsm/capabilities/WebGPU.js';
 import { WebGPURenderer } from 'three/webgpu';
 
 const OBJECT_NUM = 10_000;
@@ -90,5 +91,39 @@ function initMeshes(
 
     batchedMesh.frustumCulled = false;
     scene.add(batchedMesh);
+}
 
+function setupCamera(): THREE.PerspectiveCamera {
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(1, 12, 14);
+    camera.lookAt(0, 0, 0);
+    return camera;
+}
+
+function setupScene() : THREE.Scene {
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color('#0d0c18');
+    return scene;
+}
+
+function setupRenderer(canvas: HTMLCanvasElement, rendererType: string): WebGPURenderer {
+    console.info(rendererType, 'selected');
+
+    const selectWebGL = rendererType === 'webgl';
+
+    const renderer = new WebGPURenderer({
+        canvas: canvas,
+        antialias: true,
+        forceWebGL: selectWebGL,
+        stencil: false,
+        depth: false,
+        alpha: true,
+        powerPreference: 'high-performance',
+
+    });
+
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(800, 600);
+
+    return renderer;
 }
