@@ -163,7 +163,7 @@ const BENCHMARK_TIME = 30_000;
 export async function loadScene1(
     rendererType: string,
     stats: Stats,
-    benchmarkData: number[],
+    //benchmarkData: number[],
     onComplete: () => void
 ): Promise<void> {
     const oldCanvas = document.getElementById('my-canvas');
@@ -179,6 +179,7 @@ export async function loadScene1(
     const scene = setupScene();
     const camera = setupCamera();
     const renderer = await setupRenderer(canvas, rendererType);
+    //benchmarkData = [];
 
     await stats.init(renderer);
 
@@ -208,6 +209,8 @@ export async function loadScene1(
     console.info('Warming up for 5 seconds.');
     createStopButton(stopBenchmark);
 
+    const frameData: {time: number, fps: number, cpu: number; gpu: number, cpuUsage: number}[] = [];
+
     setTimeout(() => {
         capturing = true;
         startTime = performance.now();
@@ -226,9 +229,12 @@ export async function loadScene1(
         //renderer.dispose();
 
         //if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+        exportToCSV(frameData);
 
         onComplete();
     }, WARMUP_TIME + BENCHMARK_TIME);
+
+    
 
     await renderer.setAnimationLoop(async () => {
         const delta = clock.getDelta();
@@ -251,8 +257,44 @@ export async function loadScene1(
         stats.update();
 
         if (capturing) {
-            const fps = 1 / delta;
-            benchmarkData.push(fps);
+            const fps = stats.averageFps.logs.at(-1) ?? 0;
+            const cpu = stats.averageCpu.logs.at(-1) ?? 0;
+            const gpu = stats.averageGpu.logs.at(-1) ?? 0;
+
+            const frameBudget = fps > 0 ? 1000 / fps : 16.67;
+            const cpuUsage = Math.min((cpu / frameBudget) * 100, 100);
+
+            frameData.push({
+                time: performance.now() - startTime,
+                fps,
+                cpu,
+                gpu,
+                cpuUsage,
+            });
         }
     });
+}
+
+function exportToCSV(data:{
+    time: number,
+    fps: number,
+    cpu: number,
+    gpu: number,
+    cpuUsage: number
+}[]) {
+    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)', 'CPU (%)'];
+    const rows = data.map(d => [
+        d.time.toFixed(2), 
+        d.fps.toFixed(2), 
+        d.cpu.toFixed(2), 
+        d.gpu.toFixed(2),
+        d.cpuUsage.toFixed(2)
+    ].join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'statsgl_benchmark.csv';
+    a.click();
 }

@@ -38,10 +38,11 @@ confirmButton?.addEventListener('click', async () => {
   const benchmarkData: number[] = [];
   const stats = new Stats({
     trackGPU: true,
-    logsPerSecond: 4,
-    samplesLog: 200,
+    trackCPT: true,
+    logsPerSecond: 6,
+    samplesLog: 400,
     samplesGraph: 10,
-    precision: 2,
+    precision: 4,
     horizontal: true,
     minimal: false,
   });
@@ -59,7 +60,7 @@ confirmButton?.addEventListener('click', async () => {
 
   switch(selectedScene) {
     case 'scene1':
-      await loadScene1(selectedApi, stats, benchmarkData, onBenchmarkComplete);
+      await loadScene1(selectedApi, stats, onBenchmarkComplete);
       break;
     default:
       console.warn('Nothing was selected');
