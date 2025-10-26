@@ -94,7 +94,7 @@ function setupScene(): THREE.Scene {
     return scene;
 }
 
-function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
+async function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
     if (rendererType === 'webgpu' && !navigator.gpu) {
         console.warn('WebGPU not supported. Falling back to WebGL.');
         rendererType = 'webgl';
@@ -110,16 +110,11 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
             antialias: true,
             stencil: false,
             depth: false,
-            alpha: true,
+            alpha: false,
+            powerPreference: 'high-performance',
         });
     } else {
-        renderer = new WebGPURenderer({
-            canvas,
-            antialias: true,
-            stencil: false,
-            depth: false,
-            alpha: true
-        });
+        renderer = await createWebGPURenderer(canvas);
     }
 
     renderer.setPixelRatio(window.devicePixelRatio);
@@ -130,16 +125,47 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
     return renderer;
 }
 
+
+async function createWebGPURenderer(canvas: HTMLCanvasElement): Promise<WebGPURenderer> {
+    const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
+    if (!context) {
+        throw new Error('Failed to get WebGPU context');
+    }
+
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+        throw new Error('WebGPU adapter not available');
+    }
+
+    const device = await adapter.requestDevice();
+    const format = navigator.gpu.getPreferredCanvasFormat();
+
+    context.configure({
+        device,
+        format,
+        alphaMode: 'opaque',
+    });
+
+    return new WebGPURenderer({
+        canvas,
+        context,
+        antialias: true,
+        stencil: false,
+        depth: false,
+        alpha: true,
+    })
+}
+
 const OBJECT_NUM = 10_000;
 const WARMUP_TIME = 5_000;
 const BENCHMARK_TIME = 30_000;
 
-export function loadScene1(
+export async function loadScene1(
     rendererType: string,
     stats: Stats,
     benchmarkData: number[],
     onComplete: () => void
-): void {
+): Promise<void> {
     const oldCanvas = document.getElementById('my-canvas');
     if (oldCanvas && oldCanvas.parentNode) {
         oldCanvas.parentNode.removeChild(oldCanvas);
@@ -151,7 +177,7 @@ export function loadScene1(
 
     const scene = setupScene();
     const camera = setupCamera();
-    const renderer = setupRenderer(canvas, rendererType);
+    const renderer = await setupRenderer(canvas, rendererType);
     stats.init(renderer);
     const geometries = initGeometries();
     const userInput = document.getElementById('obj-count') as HTMLInputElement | null;
