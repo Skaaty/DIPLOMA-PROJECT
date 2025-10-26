@@ -125,7 +125,6 @@ async function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
     return renderer;
 }
 
-
 async function createWebGPURenderer(canvas: HTMLCanvasElement): Promise<WebGPURenderer> {
     const context = canvas.getContext('webgpu') as GPUCanvasContext | null;
     if (!context) {
