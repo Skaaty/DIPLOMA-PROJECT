@@ -1,6 +1,7 @@
 import type Stats from 'stats-gl';
 import * as THREE from 'three';
 import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
+
 import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
 
 function createMaterial(rendererType: string): THREE.Material {
@@ -177,7 +178,7 @@ export async function loadScene1(
     const scene = setupScene();
     const camera = setupCamera();
     const renderer = await setupRenderer(canvas, rendererType);
-    stats.init(renderer);
+    await stats.init(renderer);
     const geometries = initGeometries();
     const userInput = document.getElementById('obj-count') as HTMLInputElement | null;
     const userNum = userInput ? parseFloat(userInput.value) : NaN;
@@ -190,12 +191,12 @@ export async function loadScene1(
     let startTime = 0;
     let stoppedManually = false;
 
-    function stopBenchmark() {
+    async function stopBenchmark() {
         stoppedManually = true;
         capturing = false;
         console.info('Benchmark stopped manually.');
 
-        renderer.setAnimationLoop(null);
+        await renderer.setAnimationLoop(null);
         removeStopButton();
         onComplete();
     }
@@ -211,12 +212,12 @@ export async function loadScene1(
     }, WARMUP_TIME);
 
     // Benchmark stopping after the capture
-    setTimeout(() => {
+    setTimeout(async () => {
         if (stoppedManually) return;
         capturing = false;
         console.info('Benchmark finished.');
 
-        renderer.setAnimationLoop(null);
+        await renderer.setAnimationLoop(null);
         removeStopButton();
         //scene.clear();
         //renderer.dispose();
@@ -226,7 +227,7 @@ export async function loadScene1(
         onComplete();
     }, WARMUP_TIME + BENCHMARK_TIME);
 
-    renderer.setAnimationLoop(async () => {
+    await renderer.setAnimationLoop(async () => {
         const delta = clock.getDelta();
 
         stats.begin();
@@ -237,7 +238,7 @@ export async function loadScene1(
             }
         });
 
-        renderer.render(scene, camera);
+        await renderer.render(scene, camera);
 
         if (renderer instanceof WebGPURenderer) {
             await renderer.resolveTimestampsAsync(THREE.TimestampQuery.RENDER);

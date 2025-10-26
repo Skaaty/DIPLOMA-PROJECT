@@ -1,6 +1,7 @@
 import './style.css';
-import { loadScene1 } from './scenes/scene1';
 import Stats from 'stats-gl';
+
+import { loadScene1 } from './scenes/scene1';
 
 type ApiType = 'webgl' | 'webgpu' | string;
 type BenchmarkType = 'scene1';
@@ -16,7 +17,7 @@ resizeInput.call(input);
 let benchmarkRunning = false;
 //const benchmarkData = [];
 
-confirmButton?.addEventListener('click', () => {
+confirmButton?.addEventListener('click', async () => {
   if (benchmarkRunning) {
     console.warn('A benchmark is already running.');
     return;
@@ -58,7 +59,7 @@ confirmButton?.addEventListener('click', () => {
 
   switch(selectedScene) {
     case 'scene1':
-      loadScene1(selectedApi, stats, benchmarkData, onBenchmarkComplete);
+      await loadScene1(selectedApi, stats, benchmarkData, onBenchmarkComplete);
       break;
     default:
       console.warn('Nothing was selected');
