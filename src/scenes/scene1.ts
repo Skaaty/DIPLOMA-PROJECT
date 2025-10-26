@@ -81,8 +81,6 @@ function initMeshes(
     scene.add(batchedMesh);
 }
 
-
-
 function setupCamera(): THREE.PerspectiveCamera {
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
     camera.position.set(0, 20, 25);
@@ -110,16 +108,16 @@ function setupRenderer(canvas: HTMLCanvasElement, rendererType: string) {
         renderer = new THREE.WebGLRenderer({
             canvas,
             antialias: true,
-            stencil: true,
-            depth: true,
+            stencil: false,
+            depth: false,
             alpha: true,
         });
     } else {
         renderer = new WebGPURenderer({
             canvas,
             antialias: true,
-            stencil: true,
-            depth: true,
+            stencil: false,
+            depth: false,
             alpha: true
         });
     }
