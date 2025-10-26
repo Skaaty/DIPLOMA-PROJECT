@@ -31,7 +31,9 @@ function initMeshes(
     const geometryCount = objNum;
     const vertexCount = geometries.length * 512;
     const indexCount = geometries.length * 1024;
-    const boxRadius = 10;
+
+    const majorRadius = 10;
+    const minorRadius = 4;
 
     const batchedMesh = new THREE.BatchedMesh(
         geometryCount,
@@ -52,14 +54,26 @@ function initMeshes(
         const geometryId = geometryIds[i % geometries.length];
         const instanceId = batchedMesh.addInstance(geometryId);
 
-        const angle = (i * Math.PI * 2) / objNum;
-        const pos = new THREE.Vector3(
-            Math.cos(angle) * boxRadius,
-            Math.random() * 5.5 + 3,
-            Math.sin(angle) * boxRadius
+        const u = Math.random() * Math.PI * 2;
+        const v = Math.random() * Math.PI * 2;
+
+        const radialOffset = (Math.random() * 2 - 1) * 0.6;
+        const effectiveMinorRadius = minorRadius * (1 + radialOffset * 0.5);
+
+        const x = (majorRadius + effectiveMinorRadius * Math.cos(v)) * Math.cos(u);
+        const y = effectiveMinorRadius * Math.sin(v);
+        const z = (majorRadius + effectiveMinorRadius * Math.cos(v)) * Math.sin(u);
+
+        const pos = new THREE.Vector3(x, y, z);
+
+        const normal = new THREE.Vector3(x, y, z).normalize();
+        const quaternion = new THREE.Quaternion().setFromUnitVectors(
+            new THREE.Vector3(0, 1, 0), // original "up" direction
+            normal
         );
 
-        const matrix = new THREE.Matrix4().makeTranslation(pos.x, pos.y, pos.z);
+        const matrix = new THREE.Matrix4().compose(pos, quaternion, new THREE.Vector3(1, 1, 1));
+
         batchedMesh.setMatrixAt(instanceId, matrix);
     }
 
@@ -67,10 +81,12 @@ function initMeshes(
     scene.add(batchedMesh);
 }
 
+
+
 function setupCamera(): THREE.PerspectiveCamera {
     const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(1, 12, 14);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(0, 20, 25);
+    camera.lookAt(0, 0, 5);
     return camera;
 }
 
@@ -152,7 +168,7 @@ export function loadScene1(
     let stoppedManually = false;
 
     function stopBenchmark() {
-        stoppedManually= true;
+        stoppedManually = true;
         capturing = false;
         console.info('Benchmark stopped manually.');
 
