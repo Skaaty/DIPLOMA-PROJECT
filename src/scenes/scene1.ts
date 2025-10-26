@@ -167,6 +167,7 @@ export async function loadScene1(
     onComplete: () => void
 ): Promise<void> {
     const oldCanvas = document.getElementById('my-canvas');
+
     if (oldCanvas && oldCanvas.parentNode) {
         oldCanvas.parentNode.removeChild(oldCanvas);
     }
@@ -178,7 +179,9 @@ export async function loadScene1(
     const scene = setupScene();
     const camera = setupCamera();
     const renderer = await setupRenderer(canvas, rendererType);
+
     await stats.init(renderer);
+
     const geometries = initGeometries();
     const userInput = document.getElementById('obj-count') as HTMLInputElement | null;
     const userNum = userInput ? parseFloat(userInput.value) : NaN;
@@ -213,7 +216,7 @@ export async function loadScene1(
 
     // Benchmark stopping after the capture
     setTimeout(async () => {
-        if (stoppedManually) return;
+        if (stoppedManually) return; 
         capturing = false;
         console.info('Benchmark finished.');
 
