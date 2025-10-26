@@ -35,7 +35,6 @@ confirmButton?.addEventListener('click', async () => {
   confirmButton.disabled = true;
   confirmButton.textContent = 'Running...';
   
-  const benchmarkData: number[] = [];
   const stats = new Stats({
     trackGPU: true,
     trackCPT: true,

@@ -209,7 +209,14 @@ export async function loadScene1(
     console.info('Warming up for 5 seconds.');
     createStopButton(stopBenchmark);
 
-    const frameData: {time: number, fps: number, cpu: number; gpu: number, cpuUsage: number}[] = [];
+    const frameData: {
+        time: number,
+        fps: number,
+        cpu: number;
+        gpu: number,
+        cpuUsage: number,
+        gpuUsage: number
+    }[] = [];
 
     setTimeout(() => {
         capturing = true;
@@ -219,7 +226,7 @@ export async function loadScene1(
 
     // Benchmark stopping after the capture
     setTimeout(async () => {
-        if (stoppedManually) return; 
+        if (stoppedManually) return;
         capturing = false;
         console.info('Benchmark finished.');
 
@@ -234,7 +241,7 @@ export async function loadScene1(
         onComplete();
     }, WARMUP_TIME + BENCHMARK_TIME);
 
-    
+
 
     await renderer.setAnimationLoop(async () => {
         const delta = clock.getDelta();
@@ -263,6 +270,7 @@ export async function loadScene1(
 
             const frameBudget = fps > 0 ? 1000 / fps : 16.67;
             const cpuUsage = Math.min((cpu / frameBudget) * 100, 100);
+            const gpuUsage = Math.min((gpu / frameBudget) * 100, 100);
 
             frameData.push({
                 time: performance.now() - startTime,
@@ -270,25 +278,28 @@ export async function loadScene1(
                 cpu,
                 gpu,
                 cpuUsage,
+                gpuUsage
             });
         }
     });
 }
 
-function exportToCSV(data:{
+function exportToCSV(data: {
     time: number,
     fps: number,
     cpu: number,
     gpu: number,
-    cpuUsage: number
+    cpuUsage: number,
+    gpuUsage: number
 }[]) {
-    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)', 'CPU (%)'];
+    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)', 'CPU (%)', 'GPU (%)'];
     const rows = data.map(d => [
-        d.time.toFixed(2), 
-        d.fps.toFixed(2), 
-        d.cpu.toFixed(2), 
+        d.time.toFixed(2),
+        d.fps.toFixed(2),
+        d.cpu.toFixed(2),
         d.gpu.toFixed(2),
-        d.cpuUsage.toFixed(2)
+        d.cpuUsage.toFixed(2),
+        d.gpuUsage.toFixed(2)
     ].join(','));
     const csv = [headers.join(','), ...rows].join('\n');
 
