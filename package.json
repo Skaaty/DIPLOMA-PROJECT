@@ -1,12 +1,15 @@
 {
   "name": "diploma-project",
-  "private": true,
-  "version": "0.0.0",
+  "homepage": "https://Skaaty.github.io/DIPLOMA-PROJECT/",
+  "private": false,
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "devDependencies": {
     "@eslint/js": "^9.38.0",
@@ -20,6 +23,7 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsdoc": "^61.1.8",
     "eslint-plugin-promise": "^7.2.1",
+    "gh-pages": "^6.3.0",
     "stats-gl": "^3.6.0",
     "three": "^0.180.0"
   }
