@@ -37,7 +37,7 @@ confirmButton?.addEventListener('click', async () => {
   
   const stats = new Stats({
     trackGPU: true,
-    trackCPT: true,
+    trackCPT: false,
     logsPerSecond: 6,
     samplesLog: 400,
     samplesGraph: 10,
