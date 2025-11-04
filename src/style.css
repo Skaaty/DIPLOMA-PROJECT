@@ -106,6 +106,7 @@ input[type="search"] {
   color: rgba(255, 255, 255, 0.87);
   transition: border-color 0.25s;
   margin: 8px 8px;
+  width: 100ch;
 }
 
 input[type="text"]:hover,

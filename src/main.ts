@@ -1,21 +1,19 @@
 import './style.css';
 import Stats from 'stats-gl';
 
-import { loadScene1 } from './scenes/scene1';
+import { initScene1Webgl } from './scenes/scene1_webgl';
+import { initScene1Webgpu } from './scenes/scene1_webgpu';
 
-type ApiType = 'webgl' | 'webgpu' | string;
-type BenchmarkType = 'scene1';
+type BenchmarkType = 'scene1' | 'scene2';
 
-const apiSelector = document.getElementById('api-selector') as HTMLSelectElement;
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
 const confirmButton = document.getElementById('confirm-button') as HTMLButtonElement;
-//const container = document.getElementById('button-container') as HTMLDivElement;
+
 const input = document.querySelector('input') as HTMLInputElement;
 input?.addEventListener('input', resizeInput);
 resizeInput.call(input);
 
 let benchmarkRunning = false;
-//const benchmarkData = [];
 
 confirmButton?.addEventListener('click', async () => {
   if (benchmarkRunning) {
@@ -24,9 +22,8 @@ confirmButton?.addEventListener('click', async () => {
   }
 
   const selectedScene = sceneSelector.value as BenchmarkType;
-  const selectedApi = apiSelector.value as ApiType;
   
-  if (!selectedScene || !selectedApi) {
+  if (!selectedScene) {
     console.warn("No scene or API selected.");
     return;
   }
@@ -59,7 +56,10 @@ confirmButton?.addEventListener('click', async () => {
 
   switch(selectedScene) {
     case 'scene1':
-      await loadScene1(selectedApi, stats, onBenchmarkComplete);
+      await initScene1Webgpu(stats, onBenchmarkComplete);
+      break;
+    case 'scene2':
+      await initScene1Webgl(stats, onBenchmarkComplete);
       break;
     default:
       console.warn('Nothing was selected');
