@@ -29,14 +29,14 @@ export async function initScene1Webgl(stats: Stats, onComplete: () => void): Pro
     scene.background = new THREE.Color('#000000');
 
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 20, 25);
-    camera.lookAt(0, 0, 5);
+    camera.position.set(0, 17, 25);
+    camera.lookAt(0, 0, 7);
 
     renderer = new THREE.WebGLRenderer({
         canvas,
         antialias: true,
         stencil: false,
-        depth: false,
+        depth: true,
         alpha: true,
         powerPreference: 'high-performance',
     });
@@ -46,8 +46,8 @@ export async function initScene1Webgl(stats: Stats, onComplete: () => void): Pro
     await stats.init(renderer);
 
     geometries = [
-        new THREE.ConeGeometry(0.1, 0.1, 40),
-        new THREE.BoxGeometry(0.1, 0.1, 0.1, 2, 2, 1),
+        new THREE.ConeGeometry(0.1, 0.3, 40),
+        new THREE.BoxGeometry(0.15, 0.15, 0.15, 2, 2, 1),
         new THREE.SphereGeometry(0.1, 10, 8),
     ];
 
