@@ -11,11 +11,11 @@ let renderer: WebGPURenderer;
 let material: THREE.Material;
 let geometries: THREE.BufferGeometry[];
 
-const OBJECT_NUM = 10_000;
+const OBJECT_NUM = 5_000; 
 const WARMUP_TIME = 5_000;
 const BENCHMARK_TIME = 15_000;
 
-export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Promise<void> {
+export async function initScene1WebGPUNaive(stats: Stats, onComplete: () => void): Promise<void> {
     const oldCanvas = document.getElementById('my-canvas');
 
     if (oldCanvas && oldCanvas.parentNode) {
@@ -69,6 +69,7 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
     document.body.appendChild(renderer.domElement);
 
     await stats.init(renderer);
+    
     geometries = [
         new THREE.ConeGeometry(0.1, 0.3, 40),
         new THREE.BoxGeometry(0.15, 0.15, 0.15, 2, 2, 1),
@@ -81,31 +82,14 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
 
     material = new MeshNormalNodeMaterial();
 
-    const geometryCount = objNum;
-    const vertexCount = geometries.length * 512;
-    const indexCount = geometries.length * 1024;
-
     const majorRadius = 10;
     const minorRadius = 4;
 
-    const batchedMesh = new THREE.BatchedMesh(
-        geometryCount,
-        vertexCount,
-        indexCount,
-        material
-    ) as THREE.Object3D & {
-        addGeometry: (geometry: THREE.BufferGeometry) => number;
-        addInstance: (geometryId: number) => number;
-        setMatrixAt: (instanceId: number, matrix: THREE.Matrix4) => void;
-    };
-
-    const geometryIds: number[] = geometries.map(
-        (geom) => batchedMesh.addGeometry(geom)
-    );
+    console.log(`Generating ${objNum} naive meshes...`);
 
     for (let i = 0; i < objNum; i++) {
-        const geometryId = geometryIds[i % geometries.length];
-        const instanceId = batchedMesh.addInstance(geometryId);
+        const geometry = geometries[i % geometries.length];
+        const mesh = new THREE.Mesh(geometry, material);
 
         const u = Math.random() * Math.PI * 2;
         const v = Math.random() * Math.PI * 2;
@@ -117,20 +101,18 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
         const y = effectiveMinorRadius * Math.sin(v);
         const z = (majorRadius + effectiveMinorRadius * Math.cos(v)) * Math.sin(u);
 
-        const pos = new THREE.Vector3(x, y, z);
+        mesh.position.set(x, y, z);
 
         const normal = new THREE.Vector3(x, y, z).normalize();
-        const quaternion = new THREE.Quaternion().setFromUnitVectors(
+        mesh.quaternion.setFromUnitVectors(
             new THREE.Vector3(0, 1, 0),
-            normal,
+            normal
         );
 
-        const matrix = new THREE.Matrix4().compose(pos, quaternion, new THREE.Vector3(1, 1, 1));
-
-        batchedMesh.setMatrixAt(instanceId, matrix);
+        scene.add(mesh);
     }
-    batchedMesh.frustumCulled = false;
-    scene.add(batchedMesh);
+    console.log('Finished generating meshes.');
+
 
     const clock = new THREE.Clock();
     let capturing = false;
@@ -159,7 +141,7 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
     setTimeout(() => {
         capturing = true;
         startTime = performance.now();
-        console.info('Benchmark started (capturing Performance Data.');
+        console.info('Benchmark started (capturing Performance Data).');
     }, WARMUP_TIME);
 
     setTimeout(async () => {
@@ -180,11 +162,8 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
 
         stats.begin();
 
-        scene.traverse((object) => {
-            if (object instanceof THREE.BatchedMesh) {
-                object.rotation.y += delta * 0.5;
-            }
-        });
+        scene.rotation.y += delta * 0.1;
+
 
         await renderer.render(scene, camera);
 

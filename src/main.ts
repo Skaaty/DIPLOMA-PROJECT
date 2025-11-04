@@ -3,8 +3,9 @@ import Stats from 'stats-gl';
 
 import { initScene1Webgl } from './scenes/scene1_webgl';
 import { initScene1Webgpu } from './scenes/scene1_webgpu';
-
-type BenchmarkType = 'scene1' | 'scene2';
+import { initScene1WebGLNaive } from './scenes/scene1_webgl_naive';
+import { initScene1WebGPUNaive } from './scenes/scene1_webgpu_naive';
+import { resizeInput } from './ui/resizeInput';
 
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
 const confirmButton = document.getElementById('confirm-button') as HTMLButtonElement;
@@ -21,7 +22,7 @@ confirmButton?.addEventListener('click', async () => {
     return;
   }
 
-  const selectedScene = sceneSelector.value as BenchmarkType;
+  const selectedScene = sceneSelector.value as string;
   
   if (!selectedScene) {
     console.warn("No scene or API selected.");
@@ -34,11 +35,11 @@ confirmButton?.addEventListener('click', async () => {
   
   const stats = new Stats({
     trackGPU: true,
-    trackCPT: false,
-    logsPerSecond: 6,
+    graphsPerSecond: 60,
+    logsPerSecond: 20,
     samplesLog: 400,
-    samplesGraph: 10,
-    precision: 4,
+    samplesGraph: 50,
+    precision: 3,
     horizontal: true,
     minimal: false,
   });
@@ -61,15 +62,17 @@ confirmButton?.addEventListener('click', async () => {
     case 'scene2':
       await initScene1Webgl(stats, onBenchmarkComplete);
       break;
+    case 'scene3':
+      await initScene1WebGLNaive(stats, onBenchmarkComplete);
+      break;
+    case 'scene4':
+      await initScene1WebGPUNaive(stats, onBenchmarkComplete);
+      break;
     default:
       console.warn('Nothing was selected');
       benchmarkRunning = false;
       confirmButton.disabled = false;
       confirmButton.textContent = 'Start Benchmark';
   }
-
 })
 
-function resizeInput(this: HTMLInputElement) {
-  this.style.width = this.value.length + "ch";
-}
