@@ -14,7 +14,7 @@ function createMaterial(rendererType: string): THREE.Material {
 
 function initGeometries(): THREE.BufferGeometry[] {
     const geometries = [
-        new THREE.ConeGeometry(0.06, 0.06, 40),
+        new THREE.ConeGeometry(0.15, 0.06, 40),
         new THREE.BoxGeometry(0.06, 0.06, 0.06, 2, 2, 1),
         new THREE.SphereGeometry(0.06, 8, 6),
     ];
@@ -91,7 +91,7 @@ function setupCamera(): THREE.PerspectiveCamera {
 
 function setupScene(): THREE.Scene {
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#0d0c18');
+    scene.background = new THREE.Color('#000000');
     return scene;
 }
 
@@ -292,17 +292,14 @@ function exportToCSV(data: {
     cpuUsage: number,
     gpuUsage: number
 }[]) {
-    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)', 'CPU (%)', 'GPU (%)'];
+    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)'];
     const rows = data.map(d => [
         d.time.toFixed(2),
         d.fps.toFixed(2),
         d.cpu.toFixed(2),
         d.gpu.toFixed(2),
-        d.cpuUsage.toFixed(2),
-        d.gpuUsage.toFixed(2)
     ].join(','));
     const csv = [headers.join(','), ...rows].join('\n');
-
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
