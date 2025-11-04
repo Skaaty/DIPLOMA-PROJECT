@@ -5,7 +5,9 @@ import { initScene1Webgl } from './scenes/scene1_webgl';
 import { initScene1Webgpu } from './scenes/scene1_webgpu';
 import { initScene1WebGLNaive } from './scenes/scene1_webgl_naive';
 import { initScene1WebGPUNaive } from './scenes/scene1_webgpu_naive';
+import { initScene3WebGLMemory } from './scenes/scene2_webgl';
 import { resizeInput } from './ui/resizeInput';
+
 
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
 const confirmButton = document.getElementById('confirm-button') as HTMLButtonElement;
@@ -23,7 +25,7 @@ confirmButton?.addEventListener('click', async () => {
   }
 
   const selectedScene = sceneSelector.value as string;
-  
+
   if (!selectedScene) {
     console.warn("No scene or API selected.");
     return;
@@ -32,7 +34,7 @@ confirmButton?.addEventListener('click', async () => {
   benchmarkRunning = true;
   confirmButton.disabled = true;
   confirmButton.textContent = 'Running...';
-  
+
   const stats = new Stats({
     trackGPU: true,
     graphsPerSecond: 60,
@@ -55,7 +57,7 @@ confirmButton?.addEventListener('click', async () => {
     console.info('Benchmark completed and ready for another run.');
   }
 
-  switch(selectedScene) {
+  switch (selectedScene) {
     case 'scene1':
       await initScene1Webgpu(stats, onBenchmarkComplete);
       break;
@@ -67,6 +69,9 @@ confirmButton?.addEventListener('click', async () => {
       break;
     case 'scene4':
       await initScene1WebGPUNaive(stats, onBenchmarkComplete);
+      break;
+    case 'scene5':
+      await initScene3WebGLMemory(stats, onBenchmarkComplete);
       break;
     default:
       console.warn('Nothing was selected');
