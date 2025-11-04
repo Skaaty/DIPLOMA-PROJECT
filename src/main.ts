@@ -5,7 +5,7 @@ import { initScene1Webgl } from './scenes/scene1_webgl';
 import { initScene1Webgpu } from './scenes/scene1_webgpu';
 import { initScene1WebGLNaive } from './scenes/scene1_webgl_naive';
 import { initScene1WebGPUNaive } from './scenes/scene1_webgpu_naive';
-import { initScene3WebGLMemory } from './scenes/scene2_webgl';
+import { initScene2Webgl } from './scenes/scene2_webgl';
 import { resizeInput } from './ui/resizeInput';
 
 
@@ -71,7 +71,7 @@ confirmButton?.addEventListener('click', async () => {
       await initScene1WebGPUNaive(stats, onBenchmarkComplete);
       break;
     case 'scene5':
-      await initScene3WebGLMemory(stats, onBenchmarkComplete);
+      await initScene2Webgl(stats, onBenchmarkComplete);
       break;
     default:
       console.warn('Nothing was selected');

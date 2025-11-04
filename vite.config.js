@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 
 export default defineConfig({
-    base: "/DIPLOMA-PROJECT"
+    base: "/DIPLOMA-PROJECT",
+    assetsInclude: "**/*.hdr"
 });
