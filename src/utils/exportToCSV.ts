@@ -3,8 +3,6 @@ export function exportToCSV(data: {
     fps: number,
     cpu: number,
     gpu: number,
-    cpuUsage: number,
-    gpuUsage: number
 }[]) {
     const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)'];
     const rows = data.map(d => [
