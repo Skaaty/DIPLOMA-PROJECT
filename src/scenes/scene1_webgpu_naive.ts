@@ -3,7 +3,8 @@ import * as THREE from 'three';
 import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
 
 import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
-import { exportToCSV } from '../utils/exportToCSV';
+import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
+import { update } from 'three/examples/jsm/libs/tween.module.js';
 
 let scene: THREE.Scene;
 let camera: THREE.Camera;
@@ -115,6 +116,7 @@ export async function initScene1WebGPUNaive(stats: Stats, onComplete: () => void
 
 
     const clock = new THREE.Clock();
+    const lastLogCount = 0;
     let capturing = false;
     let startTime = 0;
     let stoppedManually = false;
@@ -174,17 +176,7 @@ export async function initScene1WebGPUNaive(stats: Stats, onComplete: () => void
         stats.end();
         stats.update();
 
-        if (capturing) {
-            const fps = stats.averageFps.logs.at(-1) ?? 0;
-            const cpu = stats.averageCpu.logs.at(-1) ?? 0;
-            const gpu = stats.averageGpu.logs.at(-1) ?? 0;
+        updateFrameStats(capturing, stats, lastLogCount, startTime, frameData);
 
-            frameData.push({
-                time: performance.now() - startTime,
-                fps,
-                cpu,
-                gpu,
-            });
-        }
     });
 }

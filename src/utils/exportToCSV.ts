@@ -1,3 +1,5 @@
+import type Stats from "stats-gl";
+
 export function exportToCSV(data: {
     time: number,
     fps: number,
@@ -18,4 +20,23 @@ export function exportToCSV(data: {
     a.href = URL.createObjectURL(blob);
     a.download = 'statsgl_benchmark.csv';
     a.click();
+}
+
+export function updateFrameStats(capturing: boolean, stats: Stats, lastLogCount: number, startTime: number, frameData: { time: number, fps: number, cpu: number, gpu: number,}[]) {
+    if (capturing) {
+        const logCount = stats.averageCpu.logs.length;
+        if (logCount !== lastLogCount) {
+            lastLogCount = logCount;
+            const fps = stats.averageFps.logs.at(-1) ?? 0;
+            const cpu = stats.averageCpu.logs.at(-1) ?? 0;
+            const gpu = stats.averageGpu.logs.at(-1) ?? 0;
+
+            frameData.push({
+                time: performance.now() - startTime,
+                fps,
+                cpu,
+                gpu,
+            })
+        }
+    }
 }
