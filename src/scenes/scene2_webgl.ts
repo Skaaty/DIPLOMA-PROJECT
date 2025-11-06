@@ -4,9 +4,8 @@ import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
 import { EffectComposer, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
 
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
-import hdrPath from './textures/blinds_8k.hdr';
-import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
-import { update } from 'three/examples/jsm/libs/tween.module.js';
+import hdrPath from '../assets/textures/moon_lab_8k.hdr';
+import { createStopButton, removeStopButton, setupCanvas } from '../ui/benchmarkControls';
 
 
 let scene: THREE.Scene;
@@ -15,21 +14,12 @@ let renderer: THREE.WebGLRenderer;
 let geometry: THREE.SphereGeometry;
 let light: THREE.DirectionalLight;
 
-const OBJECT_NUM = 10_000;
 const WARMUP_TIME = 5_000;
 const BENCHMARK_TIME = 10_000;
 const USE_BLOOM = true;
 
 export async function initScene2Webgl(stats: Stats, onComplete: () => void): Promise<void> {
-    const oldCanvas = document.getElementById('my-canvas');
-
-    if (oldCanvas && oldCanvas.parentNode) {
-        oldCanvas.parentNode.removeChild(oldCanvas);
-    }
-
-    const canvas = document.createElement('canvas');
-    canvas.id = 'my-canvas';
-    document.body.appendChild(canvas);
+    const canvas = setupCanvas();
 
     scene = new THREE.Scene();
 
@@ -116,8 +106,8 @@ export async function initScene2Webgl(stats: Stats, onComplete: () => void): Pro
         composer.addPass(
             new UnrealBloomPass(
                 new THREE.Vector2(window.innerWidth, window.innerHeight),
-                1.2,
-                0.8,
+                0.1,
+                0.2,
                 0.1
             )
         );
@@ -183,8 +173,11 @@ export async function initScene2Webgl(stats: Stats, onComplete: () => void): Pro
 
         for (const s of spheres) s.rotation.y += delta * 0.5; // sphere rotation
 
-        if (composer) composer.render();
-        renderer.render(scene, camera);
+        if (composer) {
+            composer.render();
+        } else {
+            renderer.render(scene, camera);
+        }
 
         stats.end();
         stats.update();

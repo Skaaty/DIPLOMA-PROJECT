@@ -4,7 +4,6 @@ import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
 
 import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
-import { update } from 'three/examples/jsm/libs/tween.module.js';
 
 let scene: THREE.Scene;
 let camera: THREE.Camera;

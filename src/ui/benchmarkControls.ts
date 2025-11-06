@@ -24,3 +24,16 @@ export function removeStopButton(): void {
         setTimeout(() => button.remove(), 400);
     }
 }
+
+export function setupCanvas() {
+    const oldCanvas = document.getElementById('my-canvas');
+
+    if (oldCanvas && oldCanvas.parentNode) {
+        oldCanvas.parentNode.removeChild(oldCanvas)
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'my-canvas';
+
+    return canvas;
+}
