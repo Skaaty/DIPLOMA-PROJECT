@@ -1,6 +1,6 @@
 import type Stats from 'stats-gl';
 import * as THREE from 'three';
-import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
+import { WebGPURenderer } from 'three/webgpu';
 
 import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
@@ -80,7 +80,7 @@ export async function initScene1WebGPUNaive(stats: Stats, onComplete: () => void
     const userNum = userInput ? parseInt(userInput.value) : NaN;
     const objNum = isNaN(userNum) ? OBJECT_NUM : userNum;
 
-    material = new MeshNormalNodeMaterial();
+    material = new THREE.MeshNormalMaterial();
 
     const majorRadius = 10;
     const minorRadius = 4;
@@ -168,9 +168,9 @@ export async function initScene1WebGPUNaive(stats: Stats, onComplete: () => void
 
         await renderer.render(scene, camera);
 
-        if (renderer instanceof WebGPURenderer) {
-            await renderer.resolveTimestampsAsync(THREE.TimestampQuery.RENDER);
-        }
+        // if (renderer instanceof WebGPURenderer) {
+        //     await renderer.resolveTimestampsAsync(THREE.TimestampQuery.RENDER);
+        // }
 
         stats.end();
         stats.update();

@@ -1,6 +1,6 @@
 import type Stats from 'stats-gl';
 import * as THREE from 'three';
-import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
+import { WebGPURenderer } from 'three/webgpu';
 
 import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
@@ -79,7 +79,7 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
     const userNum = userInput ? parseInt(userInput.value) : NaN;
     const objNum = isNaN(userNum) ? OBJECT_NUM : userNum;
 
-    material = new MeshNormalNodeMaterial();
+    material = new THREE.MeshNormalMaterial();
 
     const geometryCount = objNum;
     const vertexCount = geometries.length * 512;
