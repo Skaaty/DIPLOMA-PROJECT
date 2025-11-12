@@ -4,23 +4,23 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>diploma-project</title>
-    <script type="module" crossorigin src="/DIPLOMA-PROJECT/assets/index-DXi6s7tA.js"></script>
-    <link rel="stylesheet" crossorigin href="/DIPLOMA-PROJECT/assets/index-JknGTfy_.css">
+    <script type="module" crossorigin src="/DIPLOMA-PROJECT/assets/index-wz4KIpiK.js"></script>
+    <link rel="stylesheet" crossorigin href="/DIPLOMA-PROJECT/assets/index-JoHjEkdr.css">
   </head>
   <body>
     <div id="button-container">
-      <label for="api-selector">Select API:</label>
-      <select id="api-selector" name="options" class="select-open">
-        <option value="webgl">WebGL</option>
-        <option value="webgpu">WebGPU</option>
-      </select>
       <label id="sceneselector" for="scene-selector">Select scene:</label>
       <select id="scene-selector" class="my">
-        <option value="scene1">THREE scene</option>
+        <option value="scene1">WebGPU THREE BatchedMesh</option>
+        <option value="scene2">WebGL THREE BatchedMesh</option>
+        <option value="scene3">WebGL THREE BatchedMesh Naive</option>
+        <option value="scene4">WebGPU THREE BatchedMesh Naive</option>
+        <option value="scene5">WebGL PBR</option>
+        <option value="scene6">WebGPU PBR</option>
       </select>
-      <label for="obj-count">Enter amount of objects:</label>
+      <label for="obj-count">Amount of objects:</label>
       <input type="text" id="obj-count" />
       <button id="confirm-button">Start Benchmark</button>
-    </div>
+    </div>
   </body>
 </html>
