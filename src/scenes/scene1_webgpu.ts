@@ -3,11 +3,7 @@ import * as THREE from 'three';
 import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
 
 import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
-<<<<<<< HEAD
-import { exportToCSV } from '../utils/exportToCSV';
-=======
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
->>>>>>> dev
 
 let scene: THREE.Scene;
 let camera: THREE.Camera;
@@ -137,10 +133,7 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
     scene.add(batchedMesh);
 
     const clock = new THREE.Clock();
-<<<<<<< HEAD
-=======
     const lastLogCount = 0;
->>>>>>> dev
     let capturing = false;
     let startTime = 0;
     let stoppedManually = false;
@@ -203,22 +196,7 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
         stats.end();
         stats.update();
 
-<<<<<<< HEAD
-        if (capturing) {
-            const fps = stats.averageFps.logs.at(-1) ?? 0;
-            const cpu = stats.averageCpu.logs.at(-1) ?? 0;
-            const gpu = stats.averageGpu.logs.at(-1) ?? 0;
-
-            frameData.push({
-                time: performance.now() - startTime,
-                fps,
-                cpu,
-                gpu,
-            });
-        }
-=======
         updateFrameStats(capturing, stats, lastLogCount, startTime, frameData)
 
->>>>>>> dev
     });
 }

@@ -5,30 +5,13 @@ import { initScene1Webgl } from './scenes/scene1_webgl';
 import { initScene1Webgpu } from './scenes/scene1_webgpu';
 import { initScene1WebGLNaive } from './scenes/scene1_webgl_naive';
 import { initScene1WebGPUNaive } from './scenes/scene1_webgpu_naive';
-<<<<<<< HEAD
-import { resizeInput } from './ui/resizeInput';
-
-<<<<<<< HEAD
-type ApiType = 'webgl' | 'webgpu' | string;
-type BenchmarkType = 'scene1' | 'scene2' | 'scene3';
-=======
 import { initScene2Webgl } from './scenes/scene2_webgl';
-import { initScene2Webgpu } from './scenes/scene2_webgpu'
+import { initScene2Webgpu } from './scenes/scene2_webgpu';
 import { resizeInput } from './ui/resizeInput';
 
->>>>>>> dev
-
-const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
-const confirmButton = document.getElementById('confirm-button') as HTMLButtonElement;
-<<<<<<< HEAD
-=======
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
 const confirmButton = document.getElementById('confirm-button') as HTMLButtonElement;
 
->>>>>>> dev
-=======
-
->>>>>>> dev
 const input = document.querySelector('input') as HTMLInputElement;
 input?.addEventListener('input', resizeInput);
 resizeInput.call(input);
@@ -40,23 +23,9 @@ confirmButton?.addEventListener('click', async () => {
     console.warn('A benchmark is already running.');
     return;
   }
-
-<<<<<<< HEAD
-<<<<<<< HEAD
-  const selectedScene = sceneSelector.value as BenchmarkType;
-  const selectedApi = apiSelector.value as ApiType;
-
-  if (!selectedScene || !selectedApi) {
-=======
-  const selectedScene = sceneSelector.value as string;
-  
-  if (!selectedScene) {
->>>>>>> dev
-=======
   const selectedScene = sceneSelector.value as string;
 
   if (!selectedScene) {
->>>>>>> dev
     console.warn("No scene or API selected.");
     return;
   }
@@ -99,15 +68,12 @@ confirmButton?.addEventListener('click', async () => {
       break;
     case 'scene4':
       await initScene1WebGPUNaive(stats, onBenchmarkComplete);
-<<<<<<< HEAD
-=======
       break;
     case 'scene5':
       await initScene2Webgl(stats, onBenchmarkComplete);
       break;
     case 'scene6':
       await initScene2Webgpu(stats, onBenchmarkComplete);
->>>>>>> dev
       break;
     default:
       console.warn('Nothing was selected');
