@@ -5,7 +5,7 @@ import { ssr } from "three/addons/tsl/display/SSRNode.js";
 import { smaa } from "three/addons/tsl/display/SMAANode.js";
 import { bloom } from 'three/addons/tsl/display/BloomNode.js';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
-import { blendColor, metalness, pass, reflector, mrt, output, emissive, normalView, pmremTexture, toneMapping } from 'three/tsl';
+import { blendColor, metalness, pass, reflector, mrt, output, emissive, normalView, pmremTexture } from 'three/tsl';
 import { WebGPURenderer, PostProcessing, } from 'three/webgpu';
 
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
