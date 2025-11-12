@@ -2,7 +2,7 @@ import type Stats from 'stats-gl';
 import * as THREE from 'three';
 
 import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
-import { exportToCSV } from '../utils/exportToCSV';
+import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
 
 let scene: THREE.Scene;
 let camera: THREE.Camera;
@@ -91,6 +91,7 @@ export async function initScene1WebGLNaive(stats: Stats, onComplete: () => void)
 
 
     const clock = new THREE.Clock();
+    const lastLogCount = 0;
     let capturing = false;
     let startTime = 0;
     let stoppedManually = false;
@@ -146,17 +147,7 @@ export async function initScene1WebGLNaive(stats: Stats, onComplete: () => void)
         stats.end();
         stats.update();
 
-        if (capturing) {
-            const fps = stats.averageFps.logs.at(-1) ?? 0;
-            const cpu = stats.averageCpu.logs.at(-1) ?? 0;
-            const gpu = stats.averageGpu.logs.at(-1) ?? 0;
-
-            frameData.push({
-                time: performance.now() - startTime,
-                fps,
-                cpu,
-                gpu,
-            });
-        }
+        updateFrameStats(capturing, stats,  lastLogCount, startTime, frameData);
+        
     });
 }
