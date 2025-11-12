@@ -22,7 +22,18 @@ export function exportToCSV(data: {
     a.click();
 }
 
-export function updateFrameStats(capturing: boolean, stats: Stats, lastLogCount: number, startTime: number, frameData: { time: number, fps: number, cpu: number, gpu: number,}[]) {
+export function updateFrameStats(
+    capturing: boolean, 
+    stats: Stats, 
+    lastLogCount: number, 
+    startTime: number, 
+    frameData: { 
+        time: number, 
+        fps: number, 
+        cpu: number, 
+        gpu: number,
+    }[],
+) {
     if (capturing) {
         const logCount = stats.averageCpu.logs.length;
         if (logCount !== lastLogCount) {
@@ -30,6 +41,8 @@ export function updateFrameStats(capturing: boolean, stats: Stats, lastLogCount:
             const fps = stats.averageFps.logs.at(-1) ?? 0;
             const cpu = stats.averageCpu.logs.at(-1) ?? 0;
             const gpu = stats.averageGpu.logs.at(-1) ?? 0;
+
+            if (cpu < 0.01) return;
 
             frameData.push({
                 time: performance.now() - startTime,

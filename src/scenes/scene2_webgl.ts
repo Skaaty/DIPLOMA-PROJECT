@@ -1,18 +1,22 @@
 import * as THREE from 'three';
 import type Stats from 'stats-gl';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
-import { EffectComposer, RenderPass, UnrealBloomPass } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, RenderPass, UnrealBloomPass, GLTFLoader, SMAAPass, SSAOPass, SSRPass, BokehPass, Reflector } from 'three/examples/jsm/Addons.js';
 
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
-import hdrPath from '../assets/textures/moon_lab_8k.hdr';
+import hdrPath from '../assets/textures/bloem_olive_house_8k.hdr';
+//import modelPath from '../assets/models/DamagedHelmet.glb';
+import modelPath from '../assets/models/IridescenceSuzanne.glb';
 import { createStopButton, removeStopButton, setupCanvas } from '../ui/benchmarkControls';
 
 
 let scene: THREE.Scene;
 let camera: THREE.Camera;
 let renderer: THREE.WebGLRenderer;
-let geometry: THREE.SphereGeometry;
 let light: THREE.DirectionalLight;
+let pointLight1: THREE.PointLight;
+let pointLight2: THREE.PointLight;
+let model: THREE.Group | null = null;
 
 const WARMUP_TIME = 5_000;
 const BENCHMARK_TIME = 10_000;
@@ -23,14 +27,13 @@ export async function initScene2Webgl(stats: Stats, onComplete: () => void): Pro
 
     scene = new THREE.Scene();
 
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200)
-    camera.position.set(0, 0, 4);
-    const orbitRadius = 5;
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 200);
+    const orbitRadius = 6;
     let orbitAngle = 0;
 
     renderer = new THREE.WebGLRenderer({
         canvas,
-        antialias: true,
+        antialias: false,
         stencil: false,
         depth: true,
         alpha: true,
@@ -41,76 +44,95 @@ export async function initScene2Webgl(stats: Stats, onComplete: () => void): Pro
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
-    renderer.setPixelRatio(1.0);
+    renderer.setPixelRatio(window.devicePixelRatio * 2.0);
+    renderer.toneMappingExposure = 1.0;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     document.body.appendChild(renderer.domElement);
 
     await stats.init(renderer);
 
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load(
+        modelPath,
+        (gltf) => {
+            model = gltf.scene;
+            model.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                    const mesh = child as THREE.Mesh;
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                }
+            });
+
+            model.scale.set(1.0, 1.0, 1.0);
+            scene.add(model);
+        },
+        undefined,
+        (err) => console.error('An error occurred while loading the glTF model', err)
+    );
+
     const hdrLoader = new HDRLoader();
     const pmrem = new THREE.PMREMGenerator(renderer);
     const hdrTexture = await hdrLoader.loadAsync(hdrPath);
+    hdrTexture.mapping = THREE.EquirectangularReflectionMapping;
+    hdrTexture.colorSpace = THREE.LinearSRGBColorSpace;
     const envMap = pmrem.fromEquirectangular(hdrTexture).texture;
     scene.environment = envMap;
     scene.background = envMap;
+    scene.environmentIntensity = 2.0;
 
-    light = new THREE.DirectionalLight(0xffffff, 2);
+    light = new THREE.DirectionalLight(0xffffff, 3);
     light.position.set(10, 20, 10);
     light.castShadow = true;
     light.shadow.mapSize.set(4096, 4096);
     scene.add(light);
-    scene.add(new THREE.AmbientLight(0x404040, 1.5));
 
-    geometry = new THREE.SphereGeometry(0.75, 128, 128);
+    pointLight1 = new THREE.PointLight(0xff8888, 30, 50);
+    pointLight1.position.set(-10, 5, 5);
+    pointLight1.castShadow = true;
+    pointLight1.shadow.mapSize.set(2048, 2048); // 2K shadows
+    scene.add(pointLight1);
 
-    const materials = [
-        new THREE.MeshStandardMaterial({ metalness: 1.0, roughness: 0.05, color: 0xffffff }),
-        new THREE.MeshStandardMaterial({ metalness: 1.0, roughness: 0.05, color: 0xffffff }),
-        new THREE.MeshStandardMaterial({ metalness: 1.0, roughness: 0.05, color: 0xffffff }),
-        //new THREE.MeshStandardMaterial({ metalness: 0.8, roughness: 0.3, color: 0xccccff }),
-        //new THREE.MeshStandardMaterial({ metalness: 0.2, roughness: 0.8, color: 0xffccaa }),
-    ];
+    pointLight2 = new THREE.PointLight(0x8888ff, 30, 50);
+    pointLight2.position.set(10, 5, -5);
+    pointLight2.castShadow = true;
+    pointLight2.shadow.mapSize.set(2048, 2048); // 2K shadows
+    scene.add(pointLight2);
 
-    const spheres: THREE.Mesh[] = [];
-    // for (let i = 0; i < materials.length; i++) {
-    //     const mesh = new THREE.Mesh(geometry, materials[i]);
-    //     mesh.position.x = (i - 1) * 2;
-    //     scene.add(mesh);
-    //     spheres.push(mesh);
-    // }
+    scene.add(new THREE.AmbientLight(0x404040, 2.0));
 
-    function populateScene(count: number) {
-        // Clear existing
-        for (const s of spheres) scene.remove(s);
-        spheres.length = 0;
-
-        for (let i = 0; i < count; i++) {
-            const mesh = new THREE.Mesh(geometry, createHeavyMaterial());
-            mesh.position.set(
-                (Math.random() - 0.5) * 50,
-                (Math.random() - 0.5) * 20,
-                (Math.random() - 0.5) * 50
-            );
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-            scene.add(mesh);
-            spheres.push(mesh);
-        }
-    }
-
-    populateScene(100);
+    const groundGeo = new THREE.PlaneGeometry(100, 100);
+    const groundMirror = new Reflector(groundGeo, {
+        clipBias: 0.003,
+        textureWidth: window.innerWidth * window.devicePixelRatio,
+        textureHeight: window.innerHeight * window.devicePixelRatio,
+        color: 0xffffff,
+    });
+    groundMirror.rotateX(-Math.PI / 2);
+    groundMirror.position.y = -3.0;
+    scene.add(groundMirror);
 
     let composer: EffectComposer | null = null;
+    const bloom1 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.1, 0.1, 0.2);
+    const bloom2 = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.5, 0.1, 0.2);
+    const ssrPass = new SSRPass({
+        renderer,
+        scene,
+        camera,
+        width: innerWidth,
+        height: innerHeight,
+        selects: [],
+        groundReflector: null,
+    });
+
     if (USE_BLOOM) {
         composer = new EffectComposer(renderer);
         composer.addPass(new RenderPass(scene, camera));
-        composer.addPass(
-            new UnrealBloomPass(
-                new THREE.Vector2(window.innerWidth, window.innerHeight),
-                0.1,
-                0.2,
-                0.1
-            )
-        );
+        composer.addPass(bloom1);
+        composer.addPass(bloom2);
+        //composer.addPass(new SSAOPass(scene, camera, window.innerWidth, window.innerHeight));
+        composer.addPass(new SMAAPass());
+        composer.addPass(new SSRPass(ssrPass));
     }
 
     const clock = new THREE.Clock();
@@ -163,15 +185,13 @@ export async function initScene2Webgl(stats: Stats, onComplete: () => void): Pro
 
         stats.begin()
 
-        orbitAngle += delta * 0.3;
+        orbitAngle += delta * 0.4;
         const x = Math.sin(orbitAngle) * orbitRadius;
         const z = Math.cos(orbitAngle) * orbitRadius;
-        camera.position.set(x, 1.5, z);
-        camera.lookAt(0, 0.5, 0);
+        camera.position.set(x, 1, z);
+        camera.lookAt(0, 0, 0);
 
         light.position.set(Math.sin(orbitAngle) * 20, 20, Math.cos(orbitAngle) * 20); // light position for dynamic shadows
-
-        for (const s of spheres) s.rotation.y += delta * 0.5; // sphere rotation
 
         if (composer) {
             composer.render();
@@ -185,33 +205,6 @@ export async function initScene2Webgl(stats: Stats, onComplete: () => void): Pro
         updateFrameStats(capturing, stats, lastLogCount, startTime, frameData);
 
     });
-
-    function createHeavyMaterial(): THREE.MeshStandardMaterial {
-        const mat = new THREE.MeshStandardMaterial({
-            metalness: Math.random(),
-            roughness: Math.random(),
-            color: new THREE.Color(Math.random(), Math.random(), Math.random()),
-        });
-
-        mat.onBeforeCompile = (shader) => {
-            shader.fragmentShader = shader.fragmentShader.replace(
-                '#include <dithering_fragment>',
-                `
-                for (int i = 0; i < 64; i++) {
-                    vec3 tmp = normalize(vec3(
-                    sin(gl_FragCoord.x * 0.05 + float(i)),
-                    cos(gl_FragCoord.y * 0.05 - float(i)),
-                    0.5
-                    ));
-                    gl_FragColor.rgb += tmp * 0.002;
-                }
-                #include <dithering_fragment>
-            `
-            );
-        };
-
-        return mat;
-    }
 }
 
 
