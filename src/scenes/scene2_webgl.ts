@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type Stats from 'stats-gl';
 import { HDRLoader } from 'three/examples/jsm/loaders/HDRLoader.js';
-import { EffectComposer, RenderPass, UnrealBloomPass, GLTFLoader, SMAAPass, SSAOPass, SSRPass, BokehPass, Reflector } from 'three/examples/jsm/Addons.js';
+import { EffectComposer, RenderPass, UnrealBloomPass, GLTFLoader, SMAAPass, SSRPass, Reflector } from 'three/examples/jsm/Addons.js';
 
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
 import hdrPath from '../assets/textures/bloem_olive_house_8k.hdr';
