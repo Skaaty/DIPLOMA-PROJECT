@@ -1,4 +1,5 @@
 import { mat4, vec3 } from 'gl-matrix';
+import { float } from 'three/tsl';
 
 type Mat4 = Float32Array;
 
@@ -160,6 +161,56 @@ type InstancedBatch = {
     vertexCount: number;
     instanceCount: number;
 };
+
+function createInstancedBatch(vertices: number[], matrices: Mat4[]): InstancedBatch {
+    const vao = gl.createVertexArray()!;
+    gl.bindVertexArray(vao);
+
+    const vbo = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    const vertArray = new Float32Array(vertices);
+    gl.bufferData(gl.ARRAY_BUFFER, vertArray, gl.STATIC_DRAW);
+
+    const posLoc = gl.getAttribLocation(program, 'position');
+    gl.enableVertexAttribArray(posLoc);
+    gl.vertexAttribPointer(posLoc, 3, gl.FLOAT, false, 0, 0);
+
+    const matData = new Float32Array(matrices.length * 16);
+
+    for (let i = 0; i < matrices.length; i++) {
+        matData.set(matrices[i], i * 16);
+    }
+
+    const matVBO = gl.createBuffer()!;
+    gl.bindBuffer(gl.ARRAY_BUFFER, matVBO);
+    gl.bufferData(gl.ARRAY_BUFFER, matData, gl.STATIC_DRAW);
+
+    const baseLoc = gl.getAttribLocation(program, 'instanceModel');
+
+    for (let i = 0; i < 4; i++) {
+        const loc = baseLoc + i;
+        gl.enableVertexAttribArray(loc);
+        gl.vertexAttribPointer(
+            loc,
+            4,
+            gl.FLOAT,
+            false,
+            64,
+            i * 16
+        );
+        gl.vertexAttribDivisor(loc, 1);
+    }
+
+    gl.bindVertexArray(null);
+
+    return {
+        vao,
+        vertexCount: vertices.length / 3,
+        instanceCount: matrices.length,
+    };
+}
+
+
 
 
 
