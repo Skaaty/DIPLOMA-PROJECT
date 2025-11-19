@@ -178,3 +178,109 @@ function createInstancedBatch(
         instanceCount: matrices.length
     };
 }
+
+export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
+    const oldCanvas = document.getElementById('my-canvas');
+
+    if (oldCanvas && oldCanvas.parentNode) {
+        oldCanvas.parentNode.removeChild(oldCanvas);
+    }
+
+    if (!navigator.gpu) {
+        console.warn('WebGPU not supported.');
+        onComplete();
+        return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'my-canvas';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+
+    const adapter = await navigator.gpu.requestAdapter();
+    if (!adapter) {
+        throw new Error('Faile to get GPU adapter');
+        onComplete();
+        return;
+    }
+
+    const requiredFeatures: GPUFeatureName[] = [];
+    const hasTimestampQuery = adapter.features.has('timestamp-query');
+    if (hasTimestampQuery) {
+        requiredFeatures.push('timestamp-query');
+    }
+
+    const device = await adapter.requestDevice({
+        requiredFeatures
+    });
+
+    const context = canvas.getContext('webgpu') as GPUCanvasContext;
+    const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
+
+    context.configure({
+        device,
+        format: presentationFormat,
+        alphaMode: 'opaque'
+    });
+
+    let depthTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        format: 'depth24plus',
+        usage: GPUTextureUsage.RENDER_ATTACHMENT
+    });
+
+    const shaderModule = device.createShaderModule({ code: wgslShader });
+
+    const pipeline = device.createRenderPipeline({
+        layout: 'auto',
+        vertex: {
+            module: shaderModule,
+            entryPoint: 'vs_main',
+            buffers: [
+                {
+                    arrayStride: 3 * 4,
+                    stepMode: 'vertex',
+                    attributes: [
+                        {
+                            shaderLocation: 0,
+                            offset: 0,
+                            format: 'float32x3'
+                        }
+                    ]
+                },
+                {
+                    arrayStride: 16 * 4,
+                    stepMode: 'instance',
+                    attributes: [
+                        { shaderLocation: 1, offset: 0 * 16, format: 'float32x4' },
+                        { shaderLocation: 2, offset: 4 * 4, format: 'float32x4' },
+                        { shaderLocation: 3, offset: 8 * 4, format: 'float32x4' },
+                        { shaderLocation: 4, offset: 12 * 4, format: 'float32x4' }
+                    ]
+                }
+            ]
+        },
+        fragment: {
+            module: shaderModule,
+            entryPoint: 'fs_main',
+            targets: [
+                {
+                    format: presentationFormat
+                }
+            ]
+        },
+        primitive: {
+            topology: 'triangle-list',
+            cullMode: 'back',
+        },
+        depthStencil: {
+            format: 'depth24plus',
+            depthWriteEnabled: true,
+            depthCompare: 'less'
+        }
+    });
+
+    
+}
