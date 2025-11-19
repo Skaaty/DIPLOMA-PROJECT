@@ -59,51 +59,51 @@ function createBoxVertices(): number[] {
     return [
         // front
         -0.1, -0.1, 0.1,
-         0.1, -0.1, 0.1,
-         0.1,  0.1, 0.1,
+        0.1, -0.1, 0.1,
+        0.1, 0.1, 0.1,
         -0.1, -0.1, 0.1,
-         0.1,  0.1, 0.1,
-        -0.1,  0.1, 0.1,
+        0.1, 0.1, 0.1,
+        -0.1, 0.1, 0.1,
 
         // back
         -0.1, -0.1, -0.1,
-         0.1,  0.1, -0.1,
-         0.1, -0.1, -0.1,
+        0.1, 0.1, -0.1,
+        0.1, -0.1, -0.1,
         -0.1, -0.1, -0.1,
-        -0.1,  0.1, -0.1,
-         0.1,  0.1, -0.1,
+        -0.1, 0.1, -0.1,
+        0.1, 0.1, -0.1,
 
         // left
         -0.1, -0.1, -0.1,
-        -0.1, -0.1,  0.1,
-        -0.1,  0.1,  0.1,
+        -0.1, -0.1, 0.1,
+        -0.1, 0.1, 0.1,
         -0.1, -0.1, -0.1,
-        -0.1,  0.1,  0.1,
-        -0.1,  0.1, -0.1,
+        -0.1, 0.1, 0.1,
+        -0.1, 0.1, -0.1,
 
         // right
-         0.1, -0.1, -0.1,
-         0.1,  0.1,  0.1,
-         0.1, -0.1,  0.1,
-         0.1, -0.1, -0.1,
-         0.1,  0.1, -0.1,
-         0.1,  0.1,  0.1,
+        0.1, -0.1, -0.1,
+        0.1, 0.1, 0.1,
+        0.1, -0.1, 0.1,
+        0.1, -0.1, -0.1,
+        0.1, 0.1, -0.1,
+        0.1, 0.1, 0.1,
 
         // top
-        -0.1,  0.1,  0.1,
-         0.1,  0.1,  0.1,
-         0.1,  0.1, -0.1,
-        -0.1,  0.1,  0.1,
-         0.1,  0.1, -0.1,
-        -0.1,  0.1, -0.1,
+        -0.1, 0.1, 0.1,
+        0.1, 0.1, 0.1,
+        0.1, 0.1, -0.1,
+        -0.1, 0.1, 0.1,
+        0.1, 0.1, -0.1,
+        -0.1, 0.1, -0.1,
 
         // bottom
-        -0.1, -0.1,  0.1,
-         0.1, -0.1, -0.1,
-         0.1, -0.1,  0.1,
-        -0.1, -0.1,  0.1,
+        -0.1, -0.1, 0.1,
+        0.1, -0.1, -0.1,
+        0.1, -0.1, 0.1,
+        -0.1, -0.1, 0.1,
         -0.1, -0.1, -0.1,
-         0.1, -0.1, -0.1,
+        0.1, -0.1, -0.1,
     ];
 }
 
@@ -137,7 +137,7 @@ function compileShader(type: number, src: string): WebGLShader {
     const sh = gl.createShader(type)!;
     gl.shaderSource(sh, src);
     gl.compileShader(sh);
-    
+
     if (!gl.getSamplerParameter(sh, gl.COMPILE_STATUS)) {
         throw new Error(gl.getShaderInfoLog(sh) || 'Shader compile error');
     }
@@ -210,6 +210,63 @@ function createInstancedBatch(vertices: number[], matrices: Mat4[]): InstancedBa
     };
 }
 
+function createStopButton(onClick: () => void): HTMLButtonElement {
+    const buttonContainer = document.getElementById('button-container') as HTMLDivElement;
+    if (!buttonContainer) {
+        console.warn('Button container not fuond.');
+        return undefined as unknown as HTMLButtonElement;
+    }
+
+    const existing = document.getElementById('stop-benchmark-btn');
+    if (existing) existing.remove();
+
+    const button = document.createElement('button');
+    button.id = 'stop-benchmark-btn';
+    button.textContent = 'Stop Benchmark';
+    button.addEventListener('click', onClick);
+
+    buttonContainer.appendChild(button);
+    return button;
+}
+
+function removeStopButton(): void {
+    const button = document.getElementById('stop-benchmark-btn');
+    if (button) {
+        button.classList.add('fade-out');
+        setTimeout(() => button.remove(), 400);
+    }
+}
+
+function createOverlay() {
+    let el = document.getElementById('overlay') as HTMLDivElement | null;
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'overlay';
+        Object.assign(el.style, {
+            position: "fixed",
+            top: "75px",
+            left: "10px",
+            zIndex: "1000",
+            background: "rgba(0,0,0,0.6)",
+            color: "#0f0",
+            padding: "6px 10px",
+            fontFamily: "monospace",
+            fontSize: "11px",
+            whiteSpace: "pre"
+        });
+        document.appendChild(el);
+    }
+    return el;
+}
+
+type SceneNode = {
+    children: SceneNode[];
+    localMatrix: Mat4;
+    worldMatrix: Mat4;
+    rotationY: number;
+    isRenderable: boolean;
+    batch: InstancedBatch | null;
+};
 
 
 
@@ -234,7 +291,7 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
         stencil: false,
         powerPreference: 'high-performance'
     }) as WebGL2RenderingContext;
+
     gl.enable(gl.DEPTH_TEST);
-
-
 }
+
