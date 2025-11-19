@@ -1,7 +1,4 @@
 import { mat4, vec3 } from 'gl-matrix';
-import { float } from 'three/tsl';
-
-type Mat4 = Float32Array;
 
 let gl: WebGL2RenderingContext;
 let program: WebGLProgram;
@@ -9,8 +6,8 @@ let program: WebGLProgram;
 let uProjectionLoc: WebGLUniformLocation;
 let uViewLoc: WebGLUniformLocation;
 let uSceneRotLoc: WebGLUniformLocation;
-let projectionMatrix: Mat4;
-let viewMatrix: Mat4;
+let projectionMatrix: mat4;
+let viewMatrix: mat4;
 
 const WARMUP_TIME = 15_000;
 const BENCHMARK_TIME = 30_000;
@@ -162,7 +159,7 @@ type InstancedBatch = {
     instanceCount: number;
 };
 
-function createInstancedBatch(vertices: number[], matrices: Mat4[]): InstancedBatch {
+function createInstancedBatch(vertices: number[], matrices: mat4[]): InstancedBatch {
     const vao = gl.createVertexArray()!;
     gl.bindVertexArray(vao);
 
@@ -259,17 +256,6 @@ function createOverlay() {
     return el;
 }
 
-type SceneNode = {
-    children: SceneNode[];
-    localMatrix: Mat4;
-    worldMatrix: Mat4;
-    rotationY: number;
-    isRenderable: boolean;
-    batch: InstancedBatch | null;
-};
-
-
-
 
 export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
     const oldCanvas = document.getElementById('my-canvas');
@@ -293,5 +279,68 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
     }) as WebGL2RenderingContext;
 
     gl.enable(gl.DEPTH_TEST);
+
+    program = makeProgram();
+    gl.useProgram(program);
+
+    uProjectionLoc = gl.getUniformLocation(program, 'uProjection')!;
+    uViewLoc = gl.getUniformLocation(program, 'uView')!;
+    uSceneRotLoc = gl.getUniformLocation(program, 'uSceneRot')!;
+
+    const projectionMatrix = mat4.create();
+    mat4.perspective(
+        projectionMatrix,
+        75 * Math.PI / 180,
+        canvas.width / canvas.height,
+        0.1,
+        200
+    );
+    gl.uniformMatrix4fv(uProjectionLoc, false, projectionMatrix);
+
+    viewMatrix = mat4.create();
+    const eye = vec3.fromValues(0, 17, 25);
+    const tgt = vec3.fromValues(0, 0, 7);
+    const up = vec3.fromValues(1, 0, 0);
+    mat4.lookAt(viewMatrix, eye, tgt, vec3.fromValues(0, 1, 0));
+    gl.uniformMatrix4fv(uViewLoc, false, viewMatrix);
+
+    const input = document.getElementById("obj-count") as HTMLInputElement | null;
+    const userNum = input ? parseInt(input.value) : NaN;
+    const objNum = isNaN(userNum) ? DEFAULT_OBJECT_NUM : userNum;
+
+    const coneM: mat4[] = [];
+    const boxM: mat4[] = [];
+    const sphereM: mat4[] = [];
+
+    const major = 10;
+    const minor = 4;
+
+    for (let i = 0; i < objNum; i++) {
+        const u = Math.random() * Math.PI * 2;
+        const v = Math.random() * Math.PI * 2;
+
+        const radialOffset = (Math.random() * 2 - 1) * 0.6;
+        const effectiveMinorRadius = minor * (1 + radialOffset * 0.5);
+
+        const x = (major + effectiveMinorRadius * Math.cos(v)) * Math.cos(u);
+        const y = effectiveMinorRadius * Math.sin(v);
+        const z = (major + effectiveMinorRadius * Math.cos(v)) * Math.sin(u);
+
+        const m = mat4.create();
+        mat4.fromTranslation(m, vec3.fromValues(x, y, z));
+
+        const r = Math.random();
+        if (r < 1 / 3) coneM.push(m);
+        else if (r < 2 / 3) boxM.push(m);
+        else sphereM.push(m);
+    }
+
+    const coneBatch = createInstancedBatch(createConeVertices(), coneM);
+    const boxBatch = createInstancedBatch(createBoxVertices(), boxM);
+    const sphereBatch = createInstancedBatch(createSphereVertices(), sphereM);
+    const batches = [coneBatch, boxBatch, sphereBatch];
+
+    const overlay = createOverlay();
+    const frames: FrameStats[] = [];
 }
 
