@@ -131,3 +131,39 @@ const fs = `#version 300 es
     void main() {
         outColor = vec4(abs(vNormal), 1.0);
 }`;
+
+function compileShader(type: number, src: string): WebGLShader {
+    const sh = gl.createShader(type)!;
+    gl.shaderSource(sh, src);
+    gl.compileShader(sh);
+    
+    if (!gl.getSamplerParameter(sh, gl.COMPILE_STATUS)) {
+        throw new Error(gl.getShaderInfoLog(sh) || 'Shader compile error');
+    }
+    return sh;
+}
+
+export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
+    const oldCanvas = document.getElementById('my-canvas');
+
+    if (oldCanvas && oldCanvas.parentNode) {
+        oldCanvas.parentNode.removeChild(oldCanvas);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'my-canvas';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    document.body.appendChild(canvas);
+
+    gl = canvas.getContext('webgl2', {
+        antialias: true,
+        alpha: true,
+        depth: true,
+        stencil: false,
+        powerPreference: 'high-performance'
+    }) as WebGL2RenderingContext;
+    gl.enable(gl.DEPTH_TEST);
+
+
+}
