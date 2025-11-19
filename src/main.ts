@@ -7,6 +7,7 @@ import { initScene1Webgpu } from './scenes/scene1_webgpu';
 import { initScene1WebGPUNaive } from './scenes/scene1_webgpu_naive';
 import { initScene2Webgl } from './scenes/scene2_webgl';
 import { initScene2Webgpu } from './scenes/scene2_webgpu';
+import { init1SceneWebGLInstancedRaw } from './scenes/scene1_webgl_raw';
 import { resizeInput } from './ui/resizeInput';
 
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
@@ -64,7 +65,7 @@ confirmButton?.addEventListener('click', async () => {
       await initScene1Webgl(stats, onBenchmarkComplete);
       break;
     case 'scene3':
-      await (onBenchmarkComplete);
+      await init1SceneWebGLInstancedRaw(onBenchmarkComplete);
       break;
     case 'scene4':
       await initScene1WebGPUNaive(stats, onBenchmarkComplete);

@@ -1,4 +1,5 @@
 import { mat4, vec3 } from 'gl-matrix';
+import type { WebGL } from 'three/examples/jsm/Addons.js';
 
 let gl: WebGL2RenderingContext;
 let program: WebGLProgram;
@@ -135,7 +136,7 @@ function compileShader(type: number, src: string): WebGLShader {
     gl.shaderSource(sh, src);
     gl.compileShader(sh);
 
-    if (!gl.getSamplerParameter(sh, gl.COMPILE_STATUS)) {
+    if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
         throw new Error(gl.getShaderInfoLog(sh) || 'Shader compile error');
     }
     return sh;
@@ -207,6 +208,26 @@ function createInstancedBatch(vertices: number[], matrices: mat4[]): InstancedBa
     };
 }
 
+type FrameStats = {
+    time: number;
+    fps: number;
+    cpu: number;
+    gpu: number;
+};
+
+function exportCSV(data: FrameStats[]) {
+    let csv = "time_ms,fps,cpu_ms,gpu_ms\n";
+    csv += data.map(d =>
+        `${d.time},${d.fps},${d.cpu},${d.gpu}`
+    ).join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "webgl_mixed_instanced_benchmark.csv";
+    a.click();
+}
+
 function createStopButton(onClick: () => void): HTMLButtonElement {
     const buttonContainer = document.getElementById('button-container') as HTMLDivElement;
     if (!buttonContainer) {
@@ -251,7 +272,7 @@ function createOverlay() {
             fontSize: "11px",
             whiteSpace: "pre"
         });
-        document.appendChild(el);
+        document.body.appendChild(el);
     }
     return el;
 }
@@ -287,7 +308,7 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
     uViewLoc = gl.getUniformLocation(program, 'uView')!;
     uSceneRotLoc = gl.getUniformLocation(program, 'uSceneRot')!;
 
-    const projectionMatrix = mat4.create();
+    projectionMatrix = mat4.create();
     mat4.perspective(
         projectionMatrix,
         75 * Math.PI / 180,
@@ -342,5 +363,129 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
 
     const overlay = createOverlay();
     const frames: FrameStats[] = [];
+
+    let running = true;
+    let capturing = false;
+    let captureStart = 0;
+
+    let fpsAccum = 0;
+    let fpsFrames = 0;
+    let currentFPS = 0;
+
+    let lastT = performance.now();
+    let lastCPU = 0;
+    let lastGPU = 0;
+
+    const ext = gl.getExtension('EXT_disjoint_timer_query_webgl2') as any;
+    type GPUQuery = { q: WebGLQuery, t: number };
+    const gpuQueue: GPUQuery[] = [];
+
+    function processGPU() {
+        if (!ext) return;
+        while (gpuQueue.length) {
+            const info = gpuQueue[0];
+            const available = gl.getQueryParameter(info.q, gl.QUERY_RESULT_AVAILABLE);
+            if (!available) break;
+
+            gpuQueue.shift();
+
+            const disjoint = gl.getParameter(ext.GPU_DISJOINT_EXT);
+            if (!disjoint) {
+                const ns = gl.getQueryParameter(info.q, gl.QUERY_RESULT);
+                lastGPU = ns / 1e6;
+            }
+            gl.deleteQuery(info.q);
+        }
+    }
+
+    createStopButton(() => {
+        running = false;
+        capturing = false;
+        removeStopButton();
+        onComplete();
+    });
+
+    setTimeout(() => {
+        capturing = true;
+        captureStart = performance.now();
+        console.info('Benchmark started (capturing Performance Data.');
+    }, WARMUP_TIME);
+
+    setTimeout(() => {
+        running = false;
+        capturing = false;
+        removeStopButton();
+        exportCSV(frames);
+        onComplete();
+    }, WARMUP_TIME + BENCHMARK_TIME);
+
+    let rot = 0;
+
+    function render() {
+        if (!running) return;
+
+        const now = performance.now();
+        const dt = now - lastT;
+        lastT = now;
+
+        fpsAccum += dt;
+        fpsFrames++;
+        if (fpsAccum >= 1000) {
+            currentFPS = (fpsFrames / fpsAccum) * 1000;
+            fpsAccum = 0;
+            fpsFrames = 0;
+        }
+
+        const cpuStart = performance.now();
+
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+        rot += 0.1 * (dt / 1000);
+        const sceneRot = mat4.create();
+        mat4.rotateY(sceneRot, sceneRot, rot);
+
+        gl.uniformMatrix4fv(uSceneRotLoc, false, sceneRot);
+
+        let q = null;
+        if (ext) {
+            q = gl.createQuery();
+            gl.beginQuery(ext.TIME_ELAPSED_EXT, q);
+        }
+
+        for (const b of batches) {
+            if (b.instanceCount === 0) continue;
+            gl.bindVertexArray(b.vao);
+            gl.drawArraysInstanced(gl.TRIANGLES, 0, b.vertexCount, b.instanceCount);
+        }
+
+        if (ext && q) {
+            gl.endQuery(ext.TIME_ELAPSED_EXT);
+            gpuQueue.push({ q, t: now });
+        }
+
+        lastCPU = performance.now() - cpuStart;
+        processGPU();
+
+        overlay.textContent =
+            `FPS: ${currentFPS.toFixed(1)}\n` +
+            `CPU: ${lastCPU.toFixed(3)} ms\n` +
+            `GPU: ${lastGPU.toFixed(3)} ms\n` +
+            `C: ${coneBatch.instanceCount} B: ${boxBatch.instanceCount} S: ${sphereBatch.instanceCount}\n` +
+            (capturing ? "Capturing…" : "Warming…");
+
+        if (capturing) {
+            frames.push({
+                time: now - captureStart,
+                fps: currentFPS,
+                cpu: lastCPU,
+                gpu: lastGPU
+            });
+        }
+
+        requestAnimationFrame(render);
+    }
+
+    render();
 }
 
