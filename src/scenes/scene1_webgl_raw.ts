@@ -143,6 +143,26 @@ function compileShader(type: number, src: string): WebGLShader {
     return sh;
 }
 
+function makeProgram(): WebGLProgram {
+    const p = gl.createProgram()!;
+    gl.attachShader(p, compileShader(gl.VERTEX_SHADER, vs));
+    gl.attachShader(p, compileShader(gl.FRAGMENT_SHADER, fs));
+    gl.linkProgram(p);
+
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+        throw new Error(gl.getProgramInfoLog(p) || 'Program link error');
+    }
+    return p;
+}
+
+type InstancedBatch = {
+    vao: WebGLVertexArrayObject;
+    vertexCount: number;
+    instanceCount: number;
+};
+
+
+
 export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
     const oldCanvas = document.getElementById('my-canvas');
 
