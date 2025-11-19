@@ -35,6 +35,21 @@ function createSphereVertices(segments = 10): number[] {
     }
 
     for (let i = 0; i < verts.length; i++) verts[i] *= 0.1;
-    
+
+    return verts;
+}
+
+function createConeVertices(segments = 20): number[] {
+    const verts: number[] = [];
+    for (let i = 0; i < segments; i++) {
+        const a = (i / segments) * Math.PI * 2;
+        const b = ((i + 1) / segments) * Math.PI * 2;
+
+        verts.push(
+            0, 0.15, 0,
+            0.1 * Math.cos(a), -0.15, 0.1 * Math.sin(a),
+            0.1 * Math.cos(b), -0.15, 0.1 * Math.sin(b),
+        );
+    }
     return verts;
 }
