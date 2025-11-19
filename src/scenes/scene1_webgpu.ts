@@ -1,6 +1,6 @@
 import type Stats from 'stats-gl';
 import * as THREE from 'three';
-import { MeshNormalNodeMaterial, WebGPURenderer } from 'three/webgpu';
+import { WebGPURenderer } from 'three/webgpu';
 
 import { createStopButton, removeStopButton } from '../ui/benchmarkControls';
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
