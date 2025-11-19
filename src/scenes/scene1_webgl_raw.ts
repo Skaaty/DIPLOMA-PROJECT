@@ -53,3 +53,81 @@ function createConeVertices(segments = 20): number[] {
     }
     return verts;
 }
+
+function createBoxVertices(): number[] {
+    return [
+        // front
+        -0.1, -0.1, 0.1,
+         0.1, -0.1, 0.1,
+         0.1,  0.1, 0.1,
+        -0.1, -0.1, 0.1,
+         0.1,  0.1, 0.1,
+        -0.1,  0.1, 0.1,
+
+        // back
+        -0.1, -0.1, -0.1,
+         0.1,  0.1, -0.1,
+         0.1, -0.1, -0.1,
+        -0.1, -0.1, -0.1,
+        -0.1,  0.1, -0.1,
+         0.1,  0.1, -0.1,
+
+        // left
+        -0.1, -0.1, -0.1,
+        -0.1, -0.1,  0.1,
+        -0.1,  0.1,  0.1,
+        -0.1, -0.1, -0.1,
+        -0.1,  0.1,  0.1,
+        -0.1,  0.1, -0.1,
+
+        // right
+         0.1, -0.1, -0.1,
+         0.1,  0.1,  0.1,
+         0.1, -0.1,  0.1,
+         0.1, -0.1, -0.1,
+         0.1,  0.1, -0.1,
+         0.1,  0.1,  0.1,
+
+        // top
+        -0.1,  0.1,  0.1,
+         0.1,  0.1,  0.1,
+         0.1,  0.1, -0.1,
+        -0.1,  0.1,  0.1,
+         0.1,  0.1, -0.1,
+        -0.1,  0.1, -0.1,
+
+        // bottom
+        -0.1, -0.1,  0.1,
+         0.1, -0.1, -0.1,
+         0.1, -0.1,  0.1,
+        -0.1, -0.1,  0.1,
+        -0.1, -0.1, -0.1,
+         0.1, -0.1, -0.1,
+    ];
+}
+
+const vs = `#version 300 es
+    in vec3 position;
+    in mat4 instanceModel;
+
+    uniform mat4 uProjection;
+    uniform mat4 uView;
+    uniform mat4 uSceneRot;
+
+    out vec3 vNormal;
+
+    void main() {
+        vec4 worldPos = uSceneRot * instanceModel * vec4(position, 1.0);
+        vNormal = normalize(position);
+        gl_Position = uProjection * uView * worldPos;
+}`;
+
+const fs = `#version 300 es
+    precision highp float;
+
+    in vec3 vNormal;
+    out vec4 outColor;
+
+    void main() {
+        outColor = vec4(abs(vNormal), 1.0);
+}`;
