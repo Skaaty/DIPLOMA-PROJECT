@@ -35,22 +35,31 @@ confirmButton?.addEventListener('click', async () => {
   confirmButton.disabled = true;
   confirmButton.textContent = 'Running...';
 
-  const stats = new Stats({
-    trackGPU: true,
-    graphsPerSecond: 60,
-    logsPerSecond: 20,
-    samplesLog: 400,
-    samplesGraph: 50,
-    precision: 3,
-    horizontal: true,
-    minimal: false,
-  });
-  document.body.appendChild(stats.dom);
-  stats.dom.style.position = 'fixed';
-  stats.dom.style.top = '10px';
-  stats.dom.style.left = '80%';
+  let stats: Stats;
+
+  if (selectedScene !== 'scene3') {
+    stats = new Stats({
+      trackGPU: true,
+      graphsPerSecond: 60,
+      logsPerSecond: 20,
+      samplesLog: 400,
+      samplesGraph: 50,
+      precision: 3,
+      horizontal: true,
+      minimal: false,
+    });
+
+    document.body.appendChild(stats.dom);
+    stats.dom.style.position = 'fixed';
+    stats.dom.style.top = '10px';
+    stats.dom.style.left = '80%';
+  }
 
   const onBenchmarkComplete = () => {
+    if (stats?.dom?.parentNode) {
+      stats.dom.parentNode.removeChild(stats.dom);
+    }
+
     benchmarkRunning = false;
     confirmButton.disabled = false;
     confirmButton.textContent = 'Start Benchmark';
@@ -59,22 +68,22 @@ confirmButton?.addEventListener('click', async () => {
 
   switch (selectedScene) {
     case 'scene1':
-      await initScene1Webgpu(stats, onBenchmarkComplete);
+      await initScene1Webgpu(stats!, onBenchmarkComplete);
       break;
     case 'scene2':
-      await initScene1Webgl(stats, onBenchmarkComplete);
+      await initScene1Webgl(stats!, onBenchmarkComplete);
       break;
     case 'scene3':
       await init1SceneWebGLInstancedRaw(onBenchmarkComplete);
       break;
     case 'scene4':
-      await initScene1WebGPUNaive(stats, onBenchmarkComplete);
+      await initScene1WebGPUNaive(stats!, onBenchmarkComplete);
       break;
     case 'scene5':
-      await initScene2Webgl(stats, onBenchmarkComplete);
+      await initScene2Webgl(stats!, onBenchmarkComplete);
       break;
     case 'scene6':
-      await initScene2Webgpu(stats, onBenchmarkComplete);
+      await initScene2Webgpu(stats!, onBenchmarkComplete);
       break;
     default:
       console.warn('Nothing was selected');

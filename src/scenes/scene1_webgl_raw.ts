@@ -1,5 +1,6 @@
 import { mat4, vec3 } from 'gl-matrix';
-import type { WebGL } from 'three/examples/jsm/Addons.js';
+
+import { createStopButton, removeStopButton, createOverlay } from '../ui/benchmarkControls';
 
 let gl: WebGL2RenderingContext;
 let program: WebGLProgram;
@@ -10,7 +11,7 @@ let uSceneRotLoc: WebGLUniformLocation;
 let projectionMatrix: mat4;
 let viewMatrix: mat4;
 
-const WARMUP_TIME = 15_000;
+const WARMUP_TIME = 10_000;
 const BENCHMARK_TIME = 30_000;
 const DEFAULT_OBJECT_NUM = 15_000;
 
@@ -216,67 +217,21 @@ type FrameStats = {
 };
 
 function exportCSV(data: FrameStats[]) {
-    let csv = "time_ms,fps,cpu_ms,gpu_ms\n";
-    csv += data.map(d =>
-        `${d.time},${d.fps},${d.cpu},${d.gpu}`
-    ).join("\n");
+    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)'];
+    const rows = data.map(d => [
+        d.time.toFixed(2),
+        d.fps.toFixed(2),
+        d.cpu.toFixed(2),
+        d.gpu.toFixed(2),
+    ].join(','));
 
-    const blob = new Blob([csv], { type: "text/csv" });
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "webgl_mixed_instanced_benchmark.csv";
+    a.download = "rawwebgl_instanced_benchmark.csv";
     a.click();
 }
-
-function createStopButton(onClick: () => void): HTMLButtonElement {
-    const buttonContainer = document.getElementById('button-container') as HTMLDivElement;
-    if (!buttonContainer) {
-        console.warn('Button container not fuond.');
-        return undefined as unknown as HTMLButtonElement;
-    }
-
-    const existing = document.getElementById('stop-benchmark-btn');
-    if (existing) existing.remove();
-
-    const button = document.createElement('button');
-    button.id = 'stop-benchmark-btn';
-    button.textContent = 'Stop Benchmark';
-    button.addEventListener('click', onClick);
-
-    buttonContainer.appendChild(button);
-    return button;
-}
-
-function removeStopButton(): void {
-    const button = document.getElementById('stop-benchmark-btn');
-    if (button) {
-        button.classList.add('fade-out');
-        setTimeout(() => button.remove(), 400);
-    }
-}
-
-function createOverlay() {
-    let el = document.getElementById('overlay') as HTMLDivElement | null;
-    if (!el) {
-        el = document.createElement('div');
-        el.id = 'overlay';
-        Object.assign(el.style, {
-            position: "fixed",
-            top: "75px",
-            left: "10px",
-            zIndex: "1000",
-            background: "rgba(0,0,0,0.6)",
-            color: "#0f0",
-            padding: "6px 10px",
-            fontFamily: "monospace",
-            fontSize: "11px",
-            whiteSpace: "pre"
-        });
-        document.body.appendChild(el);
-    }
-    return el;
-}
-
 
 export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
     const oldCanvas = document.getElementById('my-canvas');
@@ -321,7 +276,6 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
     viewMatrix = mat4.create();
     const eye = vec3.fromValues(0, 17, 25);
     const tgt = vec3.fromValues(0, 0, 7);
-    const up = vec3.fromValues(1, 0, 0);
     mat4.lookAt(viewMatrix, eye, tgt, vec3.fromValues(0, 1, 0));
     gl.uniformMatrix4fv(uViewLoc, false, viewMatrix);
 
@@ -425,10 +379,11 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
         if (!running) return;
 
         const now = performance.now();
-        const dt = now - lastT;
+        const cpuFrameTime = now - lastT;
         lastT = now;
-
-        fpsAccum += dt;
+        lastCPU = cpuFrameTime;
+    
+        fpsAccum += cpuFrameTime;
         fpsFrames++;
         if (fpsAccum >= 1000) {
             currentFPS = (fpsFrames / fpsAccum) * 1000;
@@ -436,12 +391,10 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
             fpsFrames = 0;
         }
 
-        const cpuStart = performance.now();
-
         gl.clearColor(0, 0, 0, 1);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-        rot += 0.1 * (dt / 1000);
+        rot += 0.6 * (cpuFrameTime / 1000);
         const sceneRot = mat4.create();
         mat4.rotateY(sceneRot, sceneRot, rot);
 
@@ -464,7 +417,6 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
             gpuQueue.push({ q, t: now });
         }
 
-        lastCPU = performance.now() - cpuStart;
         processGPU();
 
         overlay.textContent =

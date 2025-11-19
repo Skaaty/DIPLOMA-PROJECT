@@ -37,3 +37,25 @@ export function setupCanvas() {
 
     return canvas;
 }
+
+export function createOverlay() {
+    let el = document.getElementById('overlay') as HTMLDivElement | null;
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'overlay';
+        Object.assign(el.style, {
+            position: "fixed",
+            top: "75px",
+            left: "10px",
+            zIndex: "1000",
+            background: "rgba(0,0,0,0.6)",
+            color: "#0f0",
+            padding: "6px 10px",
+            fontFamily: "monospace",
+            fontSize: "11px",
+            whiteSpace: "pre"
+        });
+        document.body.appendChild(el);
+    }
+    return el;
+}

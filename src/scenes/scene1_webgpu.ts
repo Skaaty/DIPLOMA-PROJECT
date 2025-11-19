@@ -79,7 +79,7 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
     const userNum = userInput ? parseInt(userInput.value) : NaN;
     const objNum = isNaN(userNum) ? OBJECT_NUM : userNum;
 
-    material = new MeshNormalNodeMaterial();
+    material = new THREE.MeshNormalMaterial();
 
     const geometryCount = objNum;
     const vertexCount = geometries.length * 512;
