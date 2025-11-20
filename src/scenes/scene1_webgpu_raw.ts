@@ -315,17 +315,21 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
     createStopButton(() => {
         running = false;
         capturing = false;
+
+        clearTimeout(warmupTimeout);
+        clearTimeout(finishTimeout);
+
         removeStopButton();
         onComplete();
     });
 
-    setTimeout(() => {
+    const warmupTimeout = window.setTimeout(() => {
         capturing = true;
         captureStart = performance.now();
         console.info('WebGPU benchmark started (capturing Performance Data).');
     }, WARMUP_TIME);
 
-    setTimeout(() => {
+    const finishTimeout = window.setTimeout(() => {
         running = false;
         capturing = false;
         removeStopButton();
