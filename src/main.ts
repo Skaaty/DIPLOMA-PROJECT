@@ -4,10 +4,11 @@ import Stats from 'stats-gl';
 import { initScene1Webgl } from './scenes/scene1_webgl';
 import { initScene1Webgpu } from './scenes/scene1_webgpu';
 //import { initScene1WebGLNaive } from './scenes/scene1_webgl_naive';
-import { initScene1WebGPUNaive } from './scenes/scene1_webgpu_naive';
+//import { initScene1WebGPUNaive } from './scenes/scene1_webgpu_naive';
 import { initScene2Webgl } from './scenes/scene2_webgl';
 import { initScene2Webgpu } from './scenes/scene2_webgpu';
 import { init1SceneWebGLInstancedRaw } from './scenes/scene1_webgl_raw';
+import { init1SceneWebGPUInstancedRaw } from './scenes/scene1_webgpu_raw';
 import { resizeInput } from './ui/resizeInput';
 
 const sceneSelector = document.getElementById('scene-selector') as HTMLSelectElement;
@@ -37,7 +38,7 @@ confirmButton?.addEventListener('click', async () => {
 
   let stats: Stats;
 
-  if (selectedScene !== 'scene3') {
+  if (selectedScene !== 'scene3' && selectedScene !== 'scene4') {
     stats = new Stats({
       trackGPU: true,
       graphsPerSecond: 60,
@@ -77,7 +78,7 @@ confirmButton?.addEventListener('click', async () => {
       await init1SceneWebGLInstancedRaw(onBenchmarkComplete);
       break;
     case 'scene4':
-      await initScene1WebGPUNaive(stats!, onBenchmarkComplete);
+      await init1SceneWebGPUInstancedRaw(onBenchmarkComplete);
       break;
     case 'scene5':
       await initScene2Webgl(stats!, onBenchmarkComplete);

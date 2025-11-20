@@ -2,9 +2,9 @@ import { mat4, vec3 } from 'gl-matrix';
 
 import { createStopButton, removeStopButton, createOverlay } from '../ui/benchmarkControls';
 
-const WARMUP_TIME = 10_000;
-const BENCHMARK_TIME = 30_000;
-const DEFAULT_OBJECT_NUM = 15_000;
+const OBJECT_NUM = 10_000;
+const WARMUP_TIME = 5_000;
+const BENCHMARK_TIME = 15_000;
 
 function createSphereVertices(segments = 10): number[] {
     const verts: number[] = [];
@@ -179,6 +179,30 @@ function createInstancedBatch(
     };
 }
 
+type FrameStats = {
+    time: number;
+    fps: number;
+    cpu: number;
+    gpu: number;
+};
+
+function exportCSV(data: FrameStats[]) {
+    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)'];
+    const rows = data.map(d => [
+        d.time.toFixed(2),
+        d.fps.toFixed(2),
+        d.cpu.toFixed(2),
+        d.gpu.toFixed(2),
+    ].join(','));
+
+    const csv = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "rawwebgl_instanced_benchmark.csv";
+    a.click();
+}
+
 export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
     const oldCanvas = document.getElementById('my-canvas');
 
@@ -225,7 +249,7 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
         alphaMode: 'opaque'
     });
 
-    let depthTexture = device.createTexture({
+    const depthTexture = device.createTexture({
         size: [canvas.width, canvas.height],
         format: 'depth24plus',
         usage: GPUTextureUsage.RENDER_ATTACHMENT
@@ -282,5 +306,244 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
         }
     });
 
-    
+    const uniformBufferSize = 3 * 16 * 4;
+    const uniformBuffer = device.createBuffer({
+        size: uniformBufferSize,
+        usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST
+    });
+
+    const uniformBindGroup = device.createBindGroup({
+        layout: pipeline.getBindGroupLayout(0),
+        entries: [
+            {
+                binding: 0,
+                resource: {
+                    buffer: uniformBuffer
+                }
+            }
+        ]
+    });
+
+    const projectionMatrix = mat4.create();
+    mat4.perspective(projectionMatrix, 75 * Math.PI / 180, canvas.width / canvas.height, 0.1, 200);
+
+    const viewMatrix = mat4.create();
+    const eye = vec3.fromValues(0, 17, 25);
+    const tgt = vec3.fromValues(0, 0, 7);
+    mat4.lookAt(viewMatrix, eye, tgt, vec3.fromValues(0, 1, 0));
+
+    const sceneRot = mat4.create();
+
+    {
+        const data = new Float32Array(16 * 3);
+        data.set(projectionMatrix, 0);
+        data.set(viewMatrix, 16);
+        data.set(sceneRot, 32);
+        device.queue.writeBuffer(uniformBuffer, 0, data.buffer);
+    }
+
+    const userInput = document.getElementById('obj-count') as HTMLInputElement | null;
+    const userNum = userInput ? parseInt(userInput.value) : NaN;
+    const objNum = isNaN(userNum) ? OBJECT_NUM : userNum;
+
+    const coneM: mat4[] = [];
+    const boxM: mat4[] = [];
+    const sphereM: mat4[] = [];
+
+    const major = 10;
+    const minor = 4;
+
+    for (let i = 0; i < objNum; i++) {
+        const u = Math.random() * Math.PI * 2;
+        const v = Math.random() * Math.PI * 2;
+
+        const radialOffset = (Math.random() * 2 - 1) * 0.6;
+        const effectiveMinorRadius = minor * (1 + radialOffset * 0.5);
+
+        const x = (major + effectiveMinorRadius * Math.cos(v)) * Math.cos(u);
+        const y = effectiveMinorRadius * Math.sin(v);
+        const z = (major + effectiveMinorRadius * Math.cos(v)) * Math.sin(u);
+
+        const m = mat4.create();
+        mat4.fromTranslation(m, vec3.fromValues(x, y, z));
+
+        const r = Math.random();
+        if (r < 1 / 3) coneM.push(m);
+        else if (r < 2 / 3) boxM.push(m);
+        else sphereM.push(m);
+    }
+
+    const coneBatch = createInstancedBatch(device, createConeVertices(), coneM);
+    const boxBatch = createInstancedBatch(device, createBoxVertices(), boxM);
+    const sphereBatch = createInstancedBatch(device, createSphereVertices(), sphereM);
+    const batches = [coneBatch, boxBatch, sphereBatch];
+
+    const overlay = createOverlay();
+    const frames: FrameStats[] = [];
+
+    let running = true;
+    let capturing = false;
+    let captureStart = 0;
+
+    let fpsAccum = 0;
+    let fpsFrames = 0;
+    let currentFPS = 0;
+
+    let lastT = performance.now();
+    let lastCPU = 0;
+    let lastGPU = 0;
+
+    let querySet: GPUQuerySet | null = null;
+    let queryBuffer: GPUBuffer | null = null;
+
+    if (hasTimestampQuery) {
+        querySet = device.createQuerySet({
+            type: 'timestamp',
+            count: 2
+        });
+
+        queryBuffer = device.createBuffer({
+            size: 2 * 8,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        });
+    }
+
+    function updateGPUTime() {
+        if (!queryBuffer || !querySet) return;
+
+        // Map buffer to read timestamps
+        queryBuffer.mapAsync(GPUMapMode.READ).then(() => {
+            const array = new BigInt64Array(queryBuffer.getMappedRange());
+            const t0 = array[0];
+            const t1 = array[1];
+            queryBuffer.unmap();
+
+            const deltaNs = Number(t1 - t0);
+            lastGPU = deltaNs / 1e6; // ns -> ms
+        }).catch(() => {
+            // ignore mapping errors
+        });
+    }
+
+    createStopButton(() => {
+        running = false;
+        capturing = false;
+        removeStopButton();
+        onComplete();
+    });
+
+    setTimeout(() => {
+        capturing = true;
+        captureStart = performance.now();
+        console.info('WebGPU benchmark started (capturing Performance Data).');
+    }, WARMUP_TIME);
+
+    setTimeout(() => {
+        running = false;
+        capturing = false;
+        removeStopButton();
+        exportCSV(frames);
+        onComplete();
+    }, WARMUP_TIME + BENCHMARK_TIME);
+
+    let rot = 0;
+
+    async function render() {
+        if (!running) return;
+
+        const now = performance.now();
+        const cpuFrameTime = now - lastT;
+        lastT = now;
+        lastCPU = cpuFrameTime;
+
+        fpsAccum += cpuFrameTime;
+        fpsFrames++;
+        if (fpsAccum >= 1000) {
+            currentFPS = (fpsFrames / fpsAccum) * 1000;
+            fpsAccum = 0;
+            fpsFrames = 0;
+        }
+
+        rot += 0.6 * (cpuFrameTime / 1000);
+        mat4.identity(sceneRot);
+        mat4.rotateY(sceneRot, sceneRot, rot);
+
+        device.queue.writeBuffer(
+            uniformBuffer,
+            32 * 4, // offset: 2nd matrix (projection=0..15, view=16..31, sceneRot=32..47)
+            new Float32Array(sceneRot).buffer
+        );
+
+        const colorTexture = context.getCurrentTexture();
+        const colorView = colorTexture.createView();
+        const depthView = depthTexture.createView();
+
+        const commandEncoder = device.createCommandEncoder();
+
+        const renderPassDesc: GPURenderPassDescriptor = {
+            colorAttachments: [
+                {
+                    view: colorView,
+                    clearValue: { r: 0, g: 0, b: 0, a: 1 },
+                    loadOp: 'clear',
+                    storeOp: 'store'
+                }
+            ],
+            depthStencilAttachment: {
+                view: depthView,
+                depthClearValue: 1.0,
+                depthLoadOp: 'clear',
+                depthStoreOp: 'store'
+            }
+        };
+
+        if (querySet) {
+            (renderPassDesc as GPURenderPassDescriptor).timestampWrites = {
+                querySet: querySet,
+                beginningOfPassWriteIndex: 0,
+                endOfPassWriteIndex: 1
+            };
+        }
+
+        const renderPass = commandEncoder.beginRenderPass(renderPassDesc);
+
+        renderPass.setPipeline(pipeline);
+        renderPass.setBindGroup(0, uniformBindGroup);
+
+        for (const b of batches) {
+            if (b.instanceCount === 0) continue;
+            renderPass.setVertexBuffer(0, b.vertexBuffer);
+            renderPass.setVertexBuffer(1, b.instanceBuffer);
+            renderPass.draw(b.vertexCount, b.instanceCount, 0, 0);
+        }
+
+        renderPass.end();
+
+        const commandBuffer = commandEncoder.finish();
+        device.queue.submit([commandBuffer]);
+
+        if (querySet && queryBuffer) {
+            await device.queue.onSubmittedWorkDone().then(updateGPUTime);
+        }
+
+        overlay.textContent =
+            `FPS: ${currentFPS.toFixed(1)}\n` +
+            `CPU: ${lastCPU.toFixed(3)} ms\n` +
+            `GPU: ${lastGPU.toFixed(3)} ms\n` +
+            `C: ${coneBatch.instanceCount} B: ${boxBatch.instanceCount} S: ${sphereBatch.instanceCount}\n` +
+            (capturing ? 'Capturing…' : 'Warming…');
+
+        if (capturing) {
+            frames.push({
+                time: now - captureStart,
+                fps: currentFPS,
+                cpu: lastCPU,
+                gpu: lastGPU
+            });
+        }
+
+        requestAnimationFrame(render);
+    }
+
+    await render();
 }
