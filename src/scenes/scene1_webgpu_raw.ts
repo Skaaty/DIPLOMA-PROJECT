@@ -2,10 +2,12 @@ import { mat4, vec3 } from 'gl-matrix';
 
 import { createStopButton, removeStopButton, createOverlay } from '../ui/benchmarkControls';
 import { createSphereVertices, createConeVertices, createBoxVertices } from '../utils/geometries';
+import { exportToCSV } from '../utils/exportToCSV';
+import type { FrameStats } from '../utils/exportToCSV';
 
-const OBJECT_NUM = 10_000;
-const WARMUP_TIME = 5_000;
-const BENCHMARK_TIME = 15_000;
+const WARMUP_TIME = 10_000;
+const BENCHMARK_TIME = 30_000;
+const OBJECT_NUM = 15_000;
 
 
 const wgslShader = `
@@ -88,30 +90,6 @@ function createInstancedBatch(
         vertexCount: vertices.length / 3,
         instanceCount: matrices.length
     };
-}
-
-type FrameStats = {
-    time: number;
-    fps: number;
-    cpu: number;
-    gpu: number;
-};
-
-function exportCSV(data: FrameStats[]) {
-    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)'];
-    const rows = data.map(d => [
-        d.time.toFixed(2),
-        d.fps.toFixed(2),
-        d.cpu.toFixed(2),
-        d.gpu.toFixed(2),
-    ].join(','));
-
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "rawwebgl_instanced_benchmark.csv";
-    a.click();
 }
 
 export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
@@ -342,7 +320,7 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
         running = false;
         capturing = false;
         removeStopButton();
-        exportCSV(frames);
+        exportToCSV(frames);
         onComplete();
     }, WARMUP_TIME + BENCHMARK_TIME);
 
@@ -449,7 +427,6 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
             })
         }
 
-
         overlay.textContent =
             `FPS: ${currentFPS.toFixed(1)}\n` +
             `CPU: ${lastCPU.toFixed(3)} ms\n` +
@@ -465,9 +442,7 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
                 gpu: lastGPU
             });
         }
-
         requestAnimationFrame(render);
     }
-
     render();
 }

@@ -18,7 +18,7 @@ export function exportToCSV(data: {
     const blob = new Blob([csv], { type: 'text/csv' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
-    a.download = 'statsgl_benchmark.csv';
+    a.download = 'benchmark_results.csv';
     a.click();
 }
 
@@ -52,4 +52,11 @@ export function updateFrameStats(
             })
         }
     }
+}
+
+export type FrameStats = {
+    time: number;
+    fps: number;
+    cpu: number;
+    gpu: number;
 }

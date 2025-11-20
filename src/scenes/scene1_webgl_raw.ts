@@ -2,6 +2,8 @@ import { mat4, vec3 } from 'gl-matrix';
 
 import { createStopButton, removeStopButton, createOverlay } from '../ui/benchmarkControls';
 import { createSphereVertices, createConeVertices, createBoxVertices } from '../utils/geometries';
+import { exportToCSV } from '../utils/exportToCSV';
+import type { FrameStats } from '../utils/exportToCSV';
 
 let gl: WebGL2RenderingContext;
 let program: WebGLProgram;
@@ -14,7 +16,7 @@ let viewMatrix: mat4;
 
 const WARMUP_TIME = 10_000;
 const BENCHMARK_TIME = 30_000;
-const DEFAULT_OBJECT_NUM = 15_000;
+const OBJECT_NUM = 15_000;
 
 
 const vs = `#version 300 es
@@ -120,29 +122,6 @@ function createInstancedBatch(vertices: number[], matrices: mat4[]): InstancedBa
     };
 }
 
-type FrameStats = {
-    time: number;
-    fps: number;
-    cpu: number;
-    gpu: number;
-};
-
-function exportCSV(data: FrameStats[]) {
-    const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)'];
-    const rows = data.map(d => [
-        d.time.toFixed(2),
-        d.fps.toFixed(2),
-        d.cpu.toFixed(2),
-        d.gpu.toFixed(2),
-    ].join(','));
-
-    const csv = [headers.join(','), ...rows].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "rawwebgl_instanced_benchmark.csv";
-    a.click();
-}
 
 export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
     const oldCanvas = document.getElementById('my-canvas');
@@ -192,7 +171,7 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
 
     const input = document.getElementById("obj-count") as HTMLInputElement | null;
     const userNum = input ? parseInt(input.value) : NaN;
-    const objNum = isNaN(userNum) ? DEFAULT_OBJECT_NUM : userNum;
+    const objNum = isNaN(userNum) ? OBJECT_NUM : userNum;
 
     const coneM: mat4[] = [];
     const boxM: mat4[] = [];
@@ -280,7 +259,7 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
         running = false;
         capturing = false;
         removeStopButton();
-        exportCSV(frames);
+        exportToCSV(frames);
         onComplete();
     }, WARMUP_TIME + BENCHMARK_TIME);
 
@@ -345,10 +324,8 @@ export async function init1SceneWebGLInstancedRaw(onComplete: () => void) {
                 gpu: lastGPU
             });
         }
-
         requestAnimationFrame(render);
     }
-
     render();
 }
 
