@@ -8,6 +8,7 @@ import type { FrameStats } from '../utils/exportToCSV';
 const WARMUP_TIME = 10_000;
 const BENCHMARK_TIME = 30_000;
 const OBJECT_NUM = 15_000;
+const sampleCount = 4;
 
 
 const wgslShader = `
@@ -114,8 +115,6 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
     const adapter = await navigator.gpu.requestAdapter();
     if (!adapter) {
         throw new Error('Faile to get GPU adapter');
-        onComplete();
-        return;
     }
 
     const requiredFeatures: GPUFeatureName[] = [];
@@ -131,16 +130,23 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
     const context = canvas.getContext('webgpu') as GPUCanvasContext;
     const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
 
-
     context.configure({
         device,
         format: presentationFormat,
         alphaMode: 'opaque'
     });
 
+    const msaaColorTexture = device.createTexture({
+        size: [canvas.width, canvas.height],
+        sampleCount,
+        format: presentationFormat,
+        usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+
     const depthTexture = device.createTexture({
         size: [canvas.width, canvas.height],
         format: 'depth24plus',
+        sampleCount,
         usage: GPUTextureUsage.RENDER_ATTACHMENT
     });
 
@@ -183,6 +189,9 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
                     format: presentationFormat
                 }
             ]
+        },
+        multisample: {
+            count: sampleCount,
         },
         primitive: {
             topology: 'triangle-list',
@@ -354,6 +363,7 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
 
         const colorTexture = context.getCurrentTexture();
         const colorView = colorTexture.createView();
+        const msaaView = msaaColorTexture.createView();
         const depthView = depthTexture.createView();
 
         const commandEncoder = device.createCommandEncoder();
@@ -361,7 +371,8 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
         const renderPassDesc: GPURenderPassDescriptor = {
             colorAttachments: [
                 {
-                    view: colorView,
+                    view: msaaView,
+                    resolveTarget: colorView,
                     clearValue: { r: 0, g: 0, b: 0, a: 1 },
                     loadOp: 'clear',
                     storeOp: 'store'
