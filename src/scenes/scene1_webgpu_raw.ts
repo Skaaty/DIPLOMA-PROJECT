@@ -394,7 +394,8 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
     let lastGPU = 0;
 
     let querySet: GPUQuerySet | null = null;
-    let queryBuffer: GPUBuffer | null = null;
+    let resolveBuffer: GPUBuffer | null = null;
+    let resultBuffer: GPUBuffer | null = null;
 
     if (hasTimestampQuery) {
         querySet = device.createQuerySet({
@@ -402,26 +403,14 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
             count: 2
         });
 
-        queryBuffer = device.createBuffer({
-            size: 2 * 8,
-            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ
+        resolveBuffer = device.createBuffer({
+            size: querySet.count * 8,
+            usage: GPUBufferUsage.QUERY_RESOLVE | GPUBufferUsage.COPY_SRC
         });
-    }
 
-    function updateGPUTime() {
-        if (!queryBuffer || !querySet) return;
-
-        // Map buffer to read timestamps
-        queryBuffer.mapAsync(GPUMapMode.READ).then(() => {
-            const array = new BigInt64Array(queryBuffer.getMappedRange());
-            const t0 = array[0];
-            const t1 = array[1];
-            queryBuffer.unmap();
-
-            const deltaNs = Number(t1 - t0);
-            lastGPU = deltaNs / 1e6; // ns -> ms
-        }).catch(() => {
-            // ignore mapping errors
+        resultBuffer = device.createBuffer({
+            size: resolveBuffer.size,
+            usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ,
         });
     }
 
@@ -448,7 +437,7 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
 
     let rot = 0;
 
-    async function render() {
+    function render() {
         if (!running) return;
 
         const now = performance.now();
@@ -519,12 +508,36 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
 
         renderPass.end();
 
+        if (querySet && resolveBuffer && resultBuffer) {
+            commandEncoder.resolveQuerySet(querySet, 0, querySet.count, resolveBuffer, 0);
+
+            if (resultBuffer.mapState === 'unmapped') {
+                commandEncoder.copyBufferToBuffer(
+                    resolveBuffer, 0,
+                    resultBuffer, 0,
+                    resolveBuffer.size
+                );
+            }
+        }
+
         const commandBuffer = commandEncoder.finish();
         device.queue.submit([commandBuffer]);
 
-        if (querySet && queryBuffer) {
-            await device.queue.onSubmittedWorkDone().then(updateGPUTime);
+        if (hasTimestampQuery && resultBuffer && resultBuffer.mapState === "unmapped") {
+            resultBuffer.mapAsync(GPUMapMode.READ).then(() => {
+                const times = new BigUint64Array(resultBuffer.getMappedRange());
+                const start = times[0];
+                const end = times[1];
+
+                const deltaNs = end - start;
+                lastGPU = Number(deltaNs) / 1e6;
+
+                resultBuffer.unmap();
+            }).catch(() => {
+
+            })
         }
+
 
         overlay.textContent =
             `FPS: ${currentFPS.toFixed(1)}\n` +
@@ -545,5 +558,5 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
         requestAnimationFrame(render);
     }
 
-    await render();
+    render();
 }
