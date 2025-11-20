@@ -275,13 +275,13 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
                     ]
                 },
                 {
-                    arrayStride: 16 * 4,
+                    arrayStride: 64,
                     stepMode: 'instance',
                     attributes: [
-                        { shaderLocation: 1, offset: 0 * 16, format: 'float32x4' },
-                        { shaderLocation: 2, offset: 4 * 4, format: 'float32x4' },
-                        { shaderLocation: 3, offset: 8 * 4, format: 'float32x4' },
-                        { shaderLocation: 4, offset: 12 * 4, format: 'float32x4' }
+                        { shaderLocation: 1, offset: 0, format: 'float32x4' },
+                        { shaderLocation: 2, offset: 16, format: 'float32x4' },
+                        { shaderLocation: 3, offset: 32, format: 'float32x4' },
+                        { shaderLocation: 4, offset: 48, format: 'float32x4' }
                     ]
                 }
             ]
@@ -297,7 +297,7 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
         },
         primitive: {
             topology: 'triangle-list',
-            cullMode: 'back',
+            cullMode: 'none',
         },
         depthStencil: {
             format: 'depth24plus',
