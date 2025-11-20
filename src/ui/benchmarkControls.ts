@@ -59,3 +59,9 @@ export function createOverlay() {
     }
     return el;
 }
+
+export function removeOverlay(overlay: HTMLElement | null) {
+    if (overlay && overlay.parentNode) {
+        overlay.parentNode.removeChild(overlay);
+    }
+}
