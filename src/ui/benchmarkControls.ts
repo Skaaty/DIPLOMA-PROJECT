@@ -1,5 +1,3 @@
-import { overlay } from "three/tsl";
-
 export function createStopButton(onClick: () => void): HTMLButtonElement {
     const buttonContainer = document.getElementById('button-container') as HTMLDivElement;
     if (!buttonContainer) {
