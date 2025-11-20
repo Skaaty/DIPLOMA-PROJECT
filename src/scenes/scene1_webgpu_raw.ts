@@ -1,6 +1,6 @@
 import { mat4, vec3 } from 'gl-matrix';
 
-import { createStopButton, removeStopButton, createOverlay } from '../ui/benchmarkControls';
+import { createStopButton, removeStopButton, createOverlay, removeOverlay } from '../ui/benchmarkControls';
 import { createSphereVertices, createConeVertices, createBoxVertices } from '../utils/geometries';
 import { exportToCSV } from '../utils/exportToCSV';
 import type { FrameStats } from '../utils/exportToCSV';
@@ -319,6 +319,7 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
         clearTimeout(warmupTimeout);
         clearTimeout(finishTimeout);
 
+        removeOverlay(overlay);
         removeStopButton();
         onComplete();
     });
@@ -332,6 +333,7 @@ export async function init1SceneWebGPUInstancedRaw(onComplete: () => void) {
     const finishTimeout = window.setTimeout(() => {
         running = false;
         capturing = false;
+        removeOverlay(overlay);
         removeStopButton();
         exportToCSV(frames);
         onComplete();
