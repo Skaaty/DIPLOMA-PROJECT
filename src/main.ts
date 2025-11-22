@@ -3,8 +3,6 @@ import Stats from 'stats-gl';
 
 import { initScene1Webgl } from './scenes/scene1_webgl';
 import { initScene1Webgpu } from './scenes/scene1_webgpu';
-//import { initScene1WebGLNaive } from './scenes/scene1_webgl_naive';
-//import { initScene1WebGPUNaive } from './scenes/scene1_webgpu_naive';
 import { initScene2Webgl } from './scenes/scene2_webgl';
 import { initScene2Webgpu } from './scenes/scene2_webgpu';
 import { init1SceneWebGLInstancedRaw } from './scenes/scene1_webgl_raw';
