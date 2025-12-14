@@ -5,7 +5,6 @@ import { EffectComposer, RenderPass, UnrealBloomPass, GLTFLoader, SMAAPass, SSRP
 
 import { exportToCSV, updateFrameStats } from '../utils/exportToCSV';
 import hdrPath from '../assets/textures/bloem_olive_house_8k.hdr';
-//import modelPath from '../assets/models/DamagedHelmet.glb';
 import modelPath from '../assets/models/IridescenceSuzanne.glb';
 import { createStopButton, removeStopButton, setupCanvas } from '../ui/benchmarkControls';
 

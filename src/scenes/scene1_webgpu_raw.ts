@@ -14,8 +14,8 @@ const sampleCount = 4;
 const wgslShader = `
     struct Uniforms {
         projection : mat4x4<f32>,
-        view       : mat4x4<f32>,
-        sceneRot   : mat4x4<f32>,
+        view : mat4x4<f32>,
+        sceneRot : mat4x4<f32>,
     };
 
     @group(0) @binding(0)

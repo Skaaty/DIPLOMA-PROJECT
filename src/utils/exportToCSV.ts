@@ -9,7 +9,7 @@ export function exportToCSV(data: {
     const headers = ['Time (ms)', 'FPS', 'CPU (ms)', 'GPU (ms)'];
     const rows = data.map(d => [
         d.time.toFixed(2),
-        d.fps.toFixed(2),
+        Math.round(d.fps),
         d.cpu.toFixed(2),
         d.gpu.toFixed(2),
     ].join(','));

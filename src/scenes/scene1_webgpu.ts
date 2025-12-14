@@ -63,6 +63,7 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
         depth: true,
         alpha: true,
     });
+
     await renderer.init();
 
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -186,8 +187,8 @@ export async function initScene1Webgpu(stats: Stats, onComplete: () => void): Pr
                 object.rotation.y += delta * 0.5;
             }
         });
-
-        await renderer.render(scene, camera);
+        
+        void renderer.render(scene, camera);
 
         if (renderer instanceof WebGPURenderer) {
             await renderer.resolveTimestampsAsync(THREE.TimestampQuery.RENDER);
